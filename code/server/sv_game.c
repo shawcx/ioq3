@@ -245,14 +245,11 @@ void SV_GetServerinfo( char *buffer, int bufferSize ) {
 	Q_strncpyz( buffer, Cvar_InfoString( CVAR_SERVERINFO ), bufferSize );
 	Q_strcat( buffer, bufferSize, "\\date\\" );
 
-	time_t curtime;
-	time(&curtime);
-
 	char s[128];
 	time_t t = time(NULL);
 	struct tm *p = localtime(&t);
 
-	strftime(s, 128, "%c", p);
+	strftime(s, sizeof(s), "%Y-%m-%d %H:%M:%S", p);
 
 	Q_strcat( buffer, bufferSize, s );
 }
