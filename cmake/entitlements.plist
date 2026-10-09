@@ -5,5 +5,8 @@
 <dict>
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
     <true/>
+    <!-- MAP_JIT pages for the arm64 QVM compiler -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
 </dict>
 </plist>
