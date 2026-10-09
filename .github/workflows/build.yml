@@ -134,6 +134,34 @@ jobs:
         name: ${{ github.event.repository.name }}-macOS-${{ needs.versions.outputs.base }}
         path: |
           build/Release/**/*
+  vm-tests:
+    name: VM Tests (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            os: ubuntu-24.04
+          - name: Linux arm64
+            os: ubuntu-24.04-arm
+          - name: macOS arm64
+            os: macos-15
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install ninja-build
+    - name: Compile
+      run: |
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON \
+          -DBUILD_CLIENT=OFF -DBUILD_SERVER=OFF -DBUILD_GAME_LIBRARIES=OFF \
+          -DBUILD_RENDERER_GL1=OFF -DBUILD_RENDERER_GL2=OFF
+        cmake --build build
+    - name: Test
+      run: ctest --test-dir build --output-on-failure
   emscripten:
     name: Emscripten
     runs-on: ubuntu-22.04
