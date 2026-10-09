@@ -1441,23 +1441,33 @@ void VM_Compile(vm_t *vm, vmHeader_t *header)
 			EmitString("D8 5C 9F 08");			// fcomp dword ptr 8[edi + ebx * 4]
 			EmitString("DF E0");				// fnstsw ax
 
+			// fcomp sets C0 (0x01) for less, C3 (0x40) for equal and
+			// all of C0, C2 (0x04) and C3 when either operand is NaN,
+			// which must compare false for everything but !=
 			switch(op)
 			{
 			case OP_EQF:
-				EmitString("F6 C4 40");			// test	ah,0x40
-				EmitJumpIns(vm, "0F 85", Constant4());	// jne 0x12345678
-			break;
-			case OP_NEF:
-				EmitString("F6 C4 40");			// test	ah,0x40
+				EmitString("80 E4 45");			// and	ah,0x45
+				EmitString("80 FC 40");			// cmp	ah,0x40
 				EmitJumpIns(vm, "0F 84", Constant4());	// je 0x12345678
 			break;
-			case OP_LTF:
-				EmitString("F6 C4 01");			// test	ah,0x01
+			case OP_NEF:
+				EmitString("80 E4 45");			// and	ah,0x45
+				EmitString("80 FC 40");			// cmp	ah,0x40
 				EmitJumpIns(vm, "0F 85", Constant4());	// jne 0x12345678
 			break;
+			case OP_LTF:
+				EmitString("80 E4 45");			// and	ah,0x45
+				EmitString("80 FC 01");			// cmp	ah,0x01
+				EmitJumpIns(vm, "0F 84", Constant4());	// je 0x12345678
+			break;
 			case OP_LEF:
-				EmitString("F6 C4 41");			// test	ah,0x41
-				EmitJumpIns(vm, "0F 85", Constant4());	// jne 0x12345678
+				v = Constant4();
+				EmitString("80 E4 45");			// and	ah,0x45
+				EmitString("80 FC 01");			// cmp	ah,0x01
+				EmitJumpIns(vm, "0F 84", v);		// je 0x12345678
+				EmitString("80 FC 40");			// cmp	ah,0x40
+				EmitJumpIns(vm, "0F 84", v);		// je 0x12345678
 			break;
 			case OP_GTF:
 				EmitString("F6 C4 41");			// test	ah,0x41
