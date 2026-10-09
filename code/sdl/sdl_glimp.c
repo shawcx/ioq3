@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
-#ifdef USE_LOCAL_HEADERS
+#ifdef USE_INTERNAL_SDL_HEADERS
 #	include "SDL.h"
 #else
 #	include <SDL.h>
@@ -52,6 +52,7 @@ cvar_t *r_allowSoftwareGL; // Don't abort out if a hardware visual can't be obta
 cvar_t *r_allowResize; // make window resizable
 cvar_t *r_centerWindow;
 cvar_t *r_sdlDriver;
+cvar_t *r_preferOpenGLES;
 
 int qglMajorVersion, qglMinorVersion;
 int qglesMajorVersion, qglesMinorVersion;
@@ -232,6 +233,27 @@ static void GLimp_DetectAvailableModes(void)
 
 /*
 ===============
+OpenGL ES compatibility
+===============
+*/
+static void APIENTRY GLimp_GLES_ClearDepth( GLclampd depth ) {
+	qglClearDepthf( depth );
+}
+
+static void APIENTRY GLimp_GLES_DepthRange( GLclampd near_val, GLclampd far_val ) {
+	qglDepthRangef( near_val, far_val );
+}
+
+static void APIENTRY GLimp_GLES_DrawBuffer( GLenum mode ) {
+	// unsupported
+}
+
+static void APIENTRY GLimp_GLES_PolygonMode( GLenum face, GLenum mode ) {
+	// unsupported
+}
+
+/*
+===============
 GLimp_GetProcAddresses
 
 Get addresses for OpenGL functions.
@@ -306,8 +328,11 @@ static qboolean GLimp_GetProcAddresses( qboolean fixedFunction ) {
 			QGL_1_3_PROCS;
 			QGL_1_5_PROCS;
 			QGL_2_0_PROCS;
-			// error so this doesn't segfault due to NULL desktop GL functions being used
-			Com_Error( ERR_FATAL, "Unsupported OpenGL Version: %s", version );
+
+			qglClearDepth = GLimp_GLES_ClearDepth;
+			qglDepthRange = GLimp_GLES_DepthRange;
+			qglDrawBuffer = GLimp_GLES_DrawBuffer;
+			qglPolygonMode = GLimp_GLES_PolygonMode;
 		} else {
 			Com_Error( ERR_FATAL, "Unsupported OpenGL Version (%s), OpenGL 2.0 is required", version );
 		}
@@ -369,13 +394,19 @@ GLimp_SetMode
 */
 static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qboolean fixedFunction)
 {
+	struct GLimp_ContextType {
+		int profileMask;
+		int majorVersion;
+		int minorVersion;
+	} contexts[4];
+	int numContexts, type;
 	const char *glstring;
 	int perChannelColorBits;
 	int colorBits, depthBits, stencilBits;
 	int samples;
 	int i = 0;
 	SDL_Surface *icon = NULL;
-	Uint32 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL;
+	Uint32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL;
 	SDL_DisplayMode desktopMode;
 	int display = 0;
 	int x = SDL_WINDOWPOS_UNDEFINED, y = SDL_WINDOWPOS_UNDEFINED;
@@ -407,10 +438,11 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 		if( display < 0 )
 		{
 			ri.Printf( PRINT_DEVELOPER, "SDL_GetWindowDisplayIndex() failed: %s\n", SDL_GetError() );
+			display = 0;
 		}
 	}
 
-	if( display >= 0 && SDL_GetDesktopDisplayMode( display, &desktopMode ) == 0 )
+	if( SDL_GetDesktopDisplayMode( display, &desktopMode ) == 0 )
 	{
 		displayAspect = (float)desktopMode.w / (float)desktopMode.h;
 
@@ -498,6 +530,63 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 
 	stencilBits = r_stencilbits->value;
 	samples = r_ext_multisample->value;
+
+	numContexts = 0;
+
+	if ( !fixedFunction ) {
+		int profileMask;
+		qboolean preferOpenGLES;
+
+		SDL_GL_ResetAttributes();
+		SDL_GL_GetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, &profileMask );
+
+		preferOpenGLES = ( r_preferOpenGLES->integer == 1 ||
+		                 ( r_preferOpenGLES->integer == -1 && profileMask == SDL_GL_CONTEXT_PROFILE_ES ) );
+
+		if ( preferOpenGLES ) {
+#ifdef __EMSCRIPTEN__
+			// WebGL 2.0 isn't fully backward compatible so you have to ask for it specifically
+			contexts[numContexts].profileMask = SDL_GL_CONTEXT_PROFILE_ES;
+			contexts[numContexts].majorVersion = 3;
+			contexts[numContexts].minorVersion = 0;
+			numContexts++;
+#endif
+
+			contexts[numContexts].profileMask = SDL_GL_CONTEXT_PROFILE_ES;
+			contexts[numContexts].majorVersion = 2;
+			contexts[numContexts].minorVersion = 0;
+			numContexts++;
+		}
+
+		contexts[numContexts].profileMask = SDL_GL_CONTEXT_PROFILE_CORE;
+		contexts[numContexts].majorVersion = 3;
+		contexts[numContexts].minorVersion = 2;
+		numContexts++;
+
+		contexts[numContexts].profileMask = 0;
+		contexts[numContexts].majorVersion = 2;
+		contexts[numContexts].minorVersion = 0;
+		numContexts++;
+
+		if ( !preferOpenGLES ) {
+#ifdef __EMSCRIPTEN__
+			contexts[numContexts].profileMask = SDL_GL_CONTEXT_PROFILE_ES;
+			contexts[numContexts].majorVersion = 3;
+			contexts[numContexts].minorVersion = 0;
+			numContexts++;
+#endif
+
+			contexts[numContexts].profileMask = SDL_GL_CONTEXT_PROFILE_ES;
+			contexts[numContexts].majorVersion = 2;
+			contexts[numContexts].minorVersion = 0;
+			numContexts++;
+		}
+	} else {
+		contexts[numContexts].profileMask = 0;
+		contexts[numContexts].majorVersion = 1;
+		contexts[numContexts].minorVersion = 1;
+		numContexts++;
+	}
 
 	for (i = 0; i < 16; i++)
 	{
@@ -599,107 +688,48 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 			SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1 );
 #endif
 
-		if( ( SDL_window = SDL_CreateWindow( CLIENT_WINDOW_TITLE, x, y,
-				glConfig.vidWidth, glConfig.vidHeight, flags ) ) == NULL )
-		{
-			ri.Printf( PRINT_DEVELOPER, "SDL_CreateWindow failed: %s\n", SDL_GetError( ) );
-			continue;
-		}
+		for ( type = 0; type < numContexts; type++ ) {
+			char contextName[32];
 
-		if( fullscreen )
-		{
-			SDL_DisplayMode mode;
-
-			switch( testColorBits )
-			{
-				case 16: mode.format = SDL_PIXELFORMAT_RGB565; break;
-				case 24: mode.format = SDL_PIXELFORMAT_RGB24;  break;
-				default: ri.Printf( PRINT_DEVELOPER, "testColorBits is %d, can't fullscreen\n", testColorBits ); continue;
+			switch ( contexts[type].profileMask ) {
+				default:
+				case 0:
+					Com_sprintf( contextName, sizeof( contextName ), "OpenGL %d.%d",
+					             contexts[type].majorVersion, contexts[type].minorVersion );
+					break;
+				case SDL_GL_CONTEXT_PROFILE_CORE:
+					Com_sprintf( contextName, sizeof( contextName ), "OpenGL %d.%d Core",
+					             contexts[type].majorVersion, contexts[type].minorVersion );
+					break;
+				case SDL_GL_CONTEXT_PROFILE_ES:
+					Com_sprintf( contextName, sizeof( contextName ), "OpenGL ES %d.%d",
+					             contexts[type].majorVersion, contexts[type].minorVersion );
+					break;
 			}
 
-			mode.w = glConfig.vidWidth;
-			mode.h = glConfig.vidHeight;
-			mode.refresh_rate = glConfig.displayFrequency = ri.Cvar_VariableIntegerValue( "r_displayRefresh" );
-			mode.driverdata = NULL;
+			SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, contexts[type].profileMask );
+			SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, contexts[type].majorVersion );
+			SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, contexts[type].minorVersion );
 
-			if( SDL_SetWindowDisplayMode( SDL_window, &mode ) < 0 )
+			if( ( SDL_window = SDL_CreateWindow( CLIENT_WINDOW_TITLE, x, y,
+					glConfig.vidWidth, glConfig.vidHeight, flags ) ) == NULL )
 			{
-				ri.Printf( PRINT_DEVELOPER, "SDL_SetWindowDisplayMode failed: %s\n", SDL_GetError( ) );
-				continue;
+				ri.Printf( PRINT_DEVELOPER, "SDL_CreateWindow failed: %s\n", SDL_GetError( ) );
+				break;
 			}
-		}
 
-		SDL_SetWindowIcon( SDL_window, icon );
-
-		if (!fixedFunction)
-		{
-			int profileMask, majorVersion, minorVersion;
-			SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profileMask);
-			SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &majorVersion);
-			SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minorVersion);
-
-			ri.Printf(PRINT_ALL, "Trying to get an OpenGL 3.2 core context\n");
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-			if ((SDL_glContext = SDL_GL_CreateContext(SDL_window)) == NULL)
+			SDL_glContext = SDL_GL_CreateContext( SDL_window );
+			if ( !SDL_glContext )
 			{
-				ri.Printf(PRINT_ALL, "SDL_GL_CreateContext failed: %s\n", SDL_GetError());
-				ri.Printf(PRINT_ALL, "Reverting to default context\n");
-
-				SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
-				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, majorVersion);
-				SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minorVersion);
-			}
-			else
-			{
-				const char *renderer;
-
-				ri.Printf(PRINT_ALL, "SDL_GL_CreateContext succeeded.\n");
-
-				if ( GLimp_GetProcAddresses( fixedFunction ) )
-				{
-					renderer = (const char *)qglGetString(GL_RENDERER);
-				}
-				else
-				{
-					ri.Printf( PRINT_ALL, "GLimp_GetProcAddresses() failed for OpenGL 3.2 core context\n" );
-					renderer = NULL;
-				}
-
-				if (!renderer || (strstr(renderer, "Software Renderer") || strstr(renderer, "Software Rasterizer")))
-				{
-					if ( renderer )
-						ri.Printf(PRINT_ALL, "GL_RENDERER is %s, rejecting context\n", renderer);
-
-					GLimp_ClearProcAddresses();
-					SDL_GL_DeleteContext(SDL_glContext);
-					SDL_glContext = NULL;
-
-					SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
-					SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, majorVersion);
-					SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minorVersion);
-				}
-			}
-		}
-		else
-		{
-			SDL_glContext = NULL;
-		}
-
-		if ( !SDL_glContext )
-		{
-			if( ( SDL_glContext = SDL_GL_CreateContext( SDL_window ) ) == NULL )
-			{
-				ri.Printf( PRINT_DEVELOPER, "SDL_GL_CreateContext failed: %s\n", SDL_GetError( ) );
 				SDL_DestroyWindow( SDL_window );
 				SDL_window = NULL;
+				ri.Printf( PRINT_ALL, "SDL_GL_CreateContext() for %s context failed: %s\n", contextName, SDL_GetError() );
 				continue;
 			}
 
 			if ( !GLimp_GetProcAddresses( fixedFunction ) )
 			{
-				ri.Printf( PRINT_ALL, "GLimp_GetProcAddresses() failed\n" );
+				ri.Printf( PRINT_ALL, "GLimp_GetProcAddresses() for %s context failed\n", contextName );
 				GLimp_ClearProcAddresses();
 				SDL_GL_DeleteContext( SDL_glContext );
 				SDL_glContext = NULL;
@@ -707,7 +737,62 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 				SDL_window = NULL;
 				continue;
 			}
+
+			if ( contexts[type].profileMask == SDL_GL_CONTEXT_PROFILE_CORE ) {
+				const char *renderer;
+
+				renderer = (const char *)qglGetString( GL_RENDERER );
+
+				if ( !renderer || strstr( renderer, "Software Renderer" ) || strstr( renderer, "Software Rasterizer" ) )
+				{
+					ri.Printf( PRINT_ALL, "GL_RENDERER is %s, rejecting %s context\n", renderer, contextName );
+
+					GLimp_ClearProcAddresses();
+					SDL_GL_DeleteContext( SDL_glContext );
+					SDL_glContext = NULL;
+					SDL_DestroyWindow( SDL_window );
+					SDL_window = NULL;
+					continue;
+				}
+			}
+
+			break;
 		}
+
+		if ( !SDL_window ) {
+			continue;
+		}
+
+		if ( !SDL_glContext ) {
+			SDL_DestroyWindow( SDL_window );
+			SDL_window = NULL;
+			continue;
+		}
+
+		if( fullscreen )
+		{
+			SDL_DisplayMode desiredMode;
+
+			switch( testColorBits )
+			{
+				case 16: desiredMode.format = SDL_PIXELFORMAT_RGB565; break;
+				case 24: desiredMode.format = SDL_PIXELFORMAT_RGB24;  break;
+				default: ri.Printf( PRINT_DEVELOPER, "testColorBits is %d, can't fullscreen\n", testColorBits ); continue;
+			}
+
+			desiredMode.w = glConfig.vidWidth;
+			desiredMode.h = glConfig.vidHeight;
+			desiredMode.refresh_rate = glConfig.displayFrequency = ri.Cvar_VariableIntegerValue( "r_displayRefresh" );
+			desiredMode.driverdata = NULL;
+
+			if( SDL_SetWindowDisplayMode( SDL_window, &desiredMode ) < 0 )
+			{
+				ri.Printf( PRINT_DEVELOPER, "SDL_SetWindowDisplayMode failed: %s\n", SDL_GetError( ) );
+				continue;
+			}
+		}
+
+		SDL_SetWindowIcon( SDL_window, icon );
 
 		qglClearColor( 0, 0, 0, 1 );
 		qglClear( GL_COLOR_BUFFER_BIT );
@@ -738,6 +823,8 @@ static int GLimp_SetMode(int mode, qboolean fullscreen, qboolean noborder, qbool
 		ri.Printf( PRINT_ALL, "Couldn't get a visual\n" );
 		return RSERR_INVALID_MODE;
 	}
+
+	SDL_ShowWindow( SDL_window );
 
 	GLimp_DetectAvailableModes();
 
@@ -815,7 +902,7 @@ static void GLimp_InitExtensions( qboolean fixedFunction )
 	glConfig.textureCompression = TC_NONE;
 
 	// GL_EXT_texture_compression_s3tc
-	if ( SDL_GL_ExtensionSupported( "GL_ARB_texture_compression" ) &&
+	if ( ( QGLES_VERSION_ATLEAST( 2, 0 ) || SDL_GL_ExtensionSupported( "GL_ARB_texture_compression" ) ) &&
 	     SDL_GL_ExtensionSupported( "GL_EXT_texture_compression_s3tc" ) )
 	{
 		if ( r_ext_compressed_textures->value )
@@ -996,6 +1083,7 @@ void GLimp_Init( qboolean fixedFunction )
 	r_sdlDriver = ri.Cvar_Get( "r_sdlDriver", "", CVAR_ROM );
 	r_allowResize = ri.Cvar_Get( "r_allowResize", "0", CVAR_ARCHIVE | CVAR_LATCH );
 	r_centerWindow = ri.Cvar_Get( "r_centerWindow", "0", CVAR_ARCHIVE | CVAR_LATCH );
+	r_preferOpenGLES = ri.Cvar_Get( "r_preferOpenGLES", "-1", CVAR_ARCHIVE | CVAR_LATCH );
 
 	if( ri.Cvar_VariableIntegerValue( "com_abnormalExit" ) )
 	{

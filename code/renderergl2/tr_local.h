@@ -49,8 +49,10 @@ QGL_ARB_vertex_array_object_PROCS;
 QGL_EXT_direct_state_access_PROCS;
 #undef GLE
 
-#define GL_INDEX_TYPE		GL_UNSIGNED_INT
-typedef unsigned int glIndex_t;
+#define GL_INDEX_TYPE		GL_UNSIGNED_SHORT
+typedef unsigned short glIndex_t;
+
+typedef unsigned int vaoCacheGlIndex_t;
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -637,8 +639,14 @@ typedef enum
 
 	UNIFORM_ENABLETEXTURES,
 
-	UNIFORM_DIFFUSETEXMATRIX,
-	UNIFORM_DIFFUSETEXOFFTURB,
+	UNIFORM_DIFFUSETEXMATRIX0,
+	UNIFORM_DIFFUSETEXMATRIX1,
+	UNIFORM_DIFFUSETEXMATRIX2,
+	UNIFORM_DIFFUSETEXMATRIX3,
+	UNIFORM_DIFFUSETEXMATRIX4,
+	UNIFORM_DIFFUSETEXMATRIX5,
+	UNIFORM_DIFFUSETEXMATRIX6,
+	UNIFORM_DIFFUSETEXMATRIX7,
 
 	UNIFORM_TCGEN0,
 	UNIFORM_TCGEN0VECTOR0,
@@ -699,6 +707,8 @@ typedef enum
 	UNIFORM_ALPHATEST,
 
 	UNIFORM_BONEMATRIX,
+
+	UNIFORM_GREYSCALE,
 
 	UNIFORM_COUNT
 } uniform_t;
@@ -1400,6 +1410,7 @@ typedef struct {
 	qboolean    intelGraphics;
 
 	qboolean	occlusionQuery;
+	GLenum		occlusionQueryTarget;
 
 	int glslMajorVersion;
 	int glslMinorVersion;
@@ -1423,6 +1434,18 @@ typedef struct {
 
 	qboolean vertexArrayObject;
 	qboolean directStateAccess;
+
+	int maxVertexAttribs;
+	qboolean gpuVertexAnimation;
+
+	GLenum vaoCacheGlIndexType; // GL_UNSIGNED_INT or GL_UNSIGNED_SHORT
+	size_t vaoCacheGlIndexSize; // must be <= sizeof( vaoCacheGlIndex_t )
+
+	// OpenGL ES extensions
+	qboolean readDepth;
+	qboolean readStencil;
+	qboolean shadowSamplers;
+	qboolean standardDerivatives;
 } glRefConfig_t;
 
 
@@ -1472,8 +1495,8 @@ typedef struct {
 
 	FBO_t *last2DFBO;
 	qboolean    colorMask[4];
-	qboolean    framePostProcessed;
 	qboolean    depthFill;
+	float       greyscale;
 } backEndState_t;
 
 /*
@@ -1594,6 +1617,7 @@ typedef struct {
 	shaderProgram_t ssaoShader;
 	shaderProgram_t depthBlurShader[4];
 	shaderProgram_t testcubeShader;
+	shaderProgram_t greyscaleShader;
 
 
 	// -----------------------------------------
@@ -1828,6 +1852,8 @@ extern	cvar_t	*r_printShaders;
 
 extern cvar_t	*r_marksOnTriangleMeshes;
 
+extern cvar_t *r_vaoCache;
+
 //====================================================================
 
 static ID_INLINE qboolean ShaderRequiresCPUDeforms(const shader_t * shader)
@@ -1990,6 +2016,7 @@ const void *RB_TakeVideoFrameCmd( const void *data );
 // tr_shader.c
 //
 shader_t	*R_FindShader( const char *name, int lightmapIndex, qboolean mipRawImage );
+shader_t	*R_FindShaderEx( const char *name, int lightmapIndex, qboolean mipRawImage, int realLightmapIndex );
 shader_t	*R_GetShaderByHandle( qhandle_t hShader );
 shader_t	*R_GetShaderByState( int index, long *cycleTime );
 shader_t *R_FindShaderByName( const char *name );
@@ -2023,24 +2050,24 @@ typedef struct stageVars
 
 typedef struct shaderCommands_s 
 {
-	glIndex_t	indexes[SHADER_MAX_INDEXES] QALIGN(16);
-	vec4_t		xyz[SHADER_MAX_VERTEXES] QALIGN(16);
-	int16_t		normal[SHADER_MAX_VERTEXES][4] QALIGN(16);
-	int16_t		tangent[SHADER_MAX_VERTEXES][4] QALIGN(16);
-	vec2_t		texCoords[SHADER_MAX_VERTEXES] QALIGN(16);
-	vec2_t		lightCoords[SHADER_MAX_VERTEXES] QALIGN(16);
-	uint16_t	color[SHADER_MAX_VERTEXES][4] QALIGN(16);
-	int16_t		lightdir[SHADER_MAX_VERTEXES][4] QALIGN(16);
-	//int			vertexDlightBits[SHADER_MAX_VERTEXES] QALIGN(16);
+	glIndex_t	indexes[SHADER_MAX_INDEXES] Q_ALIGN(16);
+	vec4_t		xyz[SHADER_MAX_VERTEXES] Q_ALIGN(16);
+	int16_t		normal[SHADER_MAX_VERTEXES][4] Q_ALIGN(16);
+	int16_t		tangent[SHADER_MAX_VERTEXES][4] Q_ALIGN(16);
+	vec2_t		texCoords[SHADER_MAX_VERTEXES] Q_ALIGN(16);
+	vec2_t		lightCoords[SHADER_MAX_VERTEXES] Q_ALIGN(16);
+	uint16_t	color[SHADER_MAX_VERTEXES][4] Q_ALIGN(16);
+	int16_t		lightdir[SHADER_MAX_VERTEXES][4] Q_ALIGN(16);
+	//int			vertexDlightBits[SHADER_MAX_VERTEXES] Q_ALIGN(16);
 
 	void *attribPointers[ATTR_INDEX_COUNT];
 	vao_t       *vao;
 	qboolean    useInternalVao;
 	qboolean    useCacheVao;
 
-	stageVars_t	svars QALIGN(16);
+	stageVars_t	svars Q_ALIGN(16);
 
-	//color4ub_t	constantColor255[SHADER_MAX_VERTEXES] QALIGN(16);
+	//color4ub_t	constantColor255[SHADER_MAX_VERTEXES] Q_ALIGN(16);
 
 	shader_t	*shader;
 	double		shaderTime;
@@ -2207,6 +2234,7 @@ void            R_VaoList_f(void);
 void            RB_UpdateTessVao(unsigned int attribBits);
 
 void VaoCache_Commit(void);
+void VaoCache_DrawElements(int numIndexes, int firstIndex);
 void VaoCache_Init(void);
 void VaoCache_BindVao(void);
 void VaoCache_CheckAdd(qboolean *endSurface, qboolean *recycleVertexBuffer, qboolean *recycleIndexBuffer, int numVerts, int numIndexes);
@@ -2336,7 +2364,7 @@ RENDERER BACK END COMMAND QUEUE
 =============================================================
 */
 
-#define	MAX_RENDER_COMMANDS	0x40000
+#define	MAX_RENDER_COMMANDS	0x80000
 
 typedef struct {
 	byte	cmds[MAX_RENDER_COMMANDS];
@@ -2495,6 +2523,8 @@ size_t RE_SaveJPGToBuffer(byte *buffer, size_t bufSize, int quality,
 		          int image_width, int image_height, byte *image_buffer, int padding);
 void RE_TakeVideoFrame( int width, int height,
 		byte *captureBuffer, byte *encodeBuffer, qboolean motionJpeg );
+
+void R_ConvertTextureFormat( const byte *in, int width, int height, GLenum format, GLenum type, byte *out );
 
 
 #endif //TR_LOCAL_H
