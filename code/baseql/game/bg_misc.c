@@ -916,16 +916,17 @@ Only in One Flag CTF games
 	},
 #endif
 
-	// baseql: Quake Live's Heavy Machinegun. Its model isn't free to use, so it
-	// borrows the machinegun's for now.
+	// baseql: Quake Live's Heavy Machinegun. Its model, icons and sounds come
+	// from quakelive.pk3, which make-ql-pak.py builds from the player's own copy
+	// of Quake Live; without it, the cgame uses the machinegun's (CG_AssetPath).
 /*QUAKED weapon_hmg (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
 */
 	{
 		"weapon_hmg",
 		"sound/misc/w_pkup.wav",
-        { "models/weapons2/machinegun/machinegun.md3",
+        { "models/weapons3/hmg/hmg.md3",
 		NULL, NULL, NULL},
-/* icon */		"icons/iconw_machinegun",
+/* icon */		"icons/weap_hmg",
 /* pickup */	"Heavy Machinegun",
 		50,
 		IT_WEAPON,
@@ -939,9 +940,9 @@ Only in One Flag CTF games
 	{
 		"ammo_hmg",
 		"sound/misc/am_pkup.wav",
-        { "models/powerups/ammo/machinegunam.md3",
+        { "models/powerups/ammo/hmgam.md3",
 		NULL, NULL, NULL},
-/* icon */		"icons/icona_machinegun",
+/* icon */		"icons/ammo_hmg",
 /* pickup */	"Heavy Bullets",
 		50,
 		IT_AMMO,

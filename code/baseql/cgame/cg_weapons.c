@@ -598,6 +598,67 @@ static void CG_GrenadeTrail( centity_t *ent, const weaponInfo_t *wi ) {
 
 /*
 =================
+CG_AssetPath, CG_RegisterAssetShader, CG_RegisterAssetSound
+
+baseql: Quake Live's Heavy Machinegun assets are only there with quakelive.pk3,
+which make-ql-pak.py builds from the player's own copy of Quake Live. Without
+them, the machinegun's stand in.
+=================
+*/
+static const char *cg_assetFallbacks[][2] = {
+	{ "models/weapons3/hmg/hmg.md3",		"models/weapons2/machinegun/machinegun.md3" },
+	{ "models/powerups/ammo/hmgam.md3",		"models/powerups/ammo/machinegunam.md3" },
+	{ "icons/weap_hmg",						"icons/iconw_machinegun" },
+	{ "icons/ammo_hmg",						"icons/icona_machinegun" },
+};
+
+static const char *CG_AssetFallback( const char *path ) {
+	int		i;
+
+	for ( i = 0 ; i < ARRAY_LEN( cg_assetFallbacks ) ; i++ ) {
+		if ( !Q_stricmp( path, cg_assetFallbacks[i][0] ) ) {
+			return cg_assetFallbacks[i][1];
+		}
+	}
+	return NULL;
+}
+
+// for models, whose path other model paths are derived from; falls back if the
+// model is missing or the renderer can't load it
+static const char *CG_AssetPath( const char *path ) {
+	const char	*fallback;
+
+	fallback = CG_AssetFallback( path );
+	if ( fallback && !trap_R_RegisterModel( path ) ) {
+		return fallback;
+	}
+	return path;
+}
+
+static qhandle_t CG_RegisterAssetShader( const char *name ) {
+	qhandle_t	shader;
+	const char	*fallback;
+
+	shader = trap_R_RegisterShader( name );
+	fallback = CG_AssetFallback( name );
+	if ( !shader && fallback ) {
+		shader = trap_R_RegisterShader( fallback );
+	}
+	return shader;
+}
+
+static sfxHandle_t CG_RegisterAssetSound( const char *name, const char *fallback ) {
+	sfxHandle_t	sound;
+
+	sound = trap_S_RegisterSound( name, qfalse );
+	if ( !sound ) {
+		sound = trap_S_RegisterSound( fallback, qfalse );
+	}
+	return sound;
+}
+
+/*
+=================
 CG_RegisterWeapon
 
 The server says this item is used on this level
@@ -606,6 +667,7 @@ The server says this item is used on this level
 void CG_RegisterWeapon( int weaponNum ) {
 	weaponInfo_t	*weaponInfo;
 	gitem_t			*item, *ammo;
+	const char		*model;
 	char			path[MAX_QPATH];
 	vec3_t			mins, maxs;
 	int				i;
@@ -635,7 +697,8 @@ void CG_RegisterWeapon( int weaponNum ) {
 	CG_RegisterItemVisuals( item - bg_itemlist );
 
 	// load cmodel before model so filecache works
-	weaponInfo->weaponModel = trap_R_RegisterModel( item->world_model[0] );
+	model = CG_AssetPath( item->world_model[0] );
+	weaponInfo->weaponModel = trap_R_RegisterModel( model );
 
 	// calc midpoint for rotation
 	trap_R_ModelBounds( weaponInfo->weaponModel, mins, maxs );
@@ -643,8 +706,8 @@ void CG_RegisterWeapon( int weaponNum ) {
 		weaponInfo->weaponMidpoint[i] = mins[i] + 0.5 * ( maxs[i] - mins[i] );
 	}
 
-	weaponInfo->weaponIcon = trap_R_RegisterShader( item->icon );
-	weaponInfo->ammoIcon = trap_R_RegisterShader( item->icon );
+	weaponInfo->weaponIcon = CG_RegisterAssetShader( item->icon );
+	weaponInfo->ammoIcon = CG_RegisterAssetShader( item->icon );
 
 	for ( ammo = bg_itemlist + 1 ; ammo->classname ; ammo++ ) {
 		if ( ammo->giType == IT_AMMO && ammo->giTag == weaponNum ) {
@@ -652,18 +715,18 @@ void CG_RegisterWeapon( int weaponNum ) {
 		}
 	}
 	if ( ammo->classname && ammo->world_model[0] ) {
-		weaponInfo->ammoModel = trap_R_RegisterModel( ammo->world_model[0] );
+		weaponInfo->ammoModel = trap_R_RegisterModel( CG_AssetPath( ammo->world_model[0] ) );
 	}
 
-	COM_StripExtension( item->world_model[0], path, sizeof(path) );
+	COM_StripExtension( model, path, sizeof(path) );
 	Q_strcat( path, sizeof(path), "_flash.md3" );
 	weaponInfo->flashModel = trap_R_RegisterModel( path );
 
-	COM_StripExtension( item->world_model[0], path, sizeof(path) );
+	COM_StripExtension( model, path, sizeof(path) );
 	Q_strcat( path, sizeof(path), "_barrel.md3" );
 	weaponInfo->barrelModel = trap_R_RegisterModel( path );
 
-	COM_StripExtension( item->world_model[0], path, sizeof(path) );
+	COM_StripExtension( model, path, sizeof(path) );
 	Q_strcat( path, sizeof(path), "_hand.md3" );
 	weaponInfo->handsModel = trap_R_RegisterModel( path );
 
@@ -727,12 +790,11 @@ void CG_RegisterWeapon( int weaponNum ) {
 		break;
 
 	case WP_HMG:
-		// placeholder: the machinegun with an orange flash
 		MAKERGB( weaponInfo->flashDlightColor, 1, 0.5f, 0 );
-		weaponInfo->flashSound[0] = trap_S_RegisterSound( "sound/weapons/machinegun/machgf1b.wav", qfalse );
-		weaponInfo->flashSound[1] = trap_S_RegisterSound( "sound/weapons/machinegun/machgf2b.wav", qfalse );
-		weaponInfo->flashSound[2] = trap_S_RegisterSound( "sound/weapons/machinegun/machgf3b.wav", qfalse );
-		weaponInfo->flashSound[3] = trap_S_RegisterSound( "sound/weapons/machinegun/machgf4b.wav", qfalse );
+		weaponInfo->flashSound[0] = CG_RegisterAssetSound( "sound/weapons/hmg/machgf1b.wav", "sound/weapons/machinegun/machgf1b.wav" );
+		weaponInfo->flashSound[1] = CG_RegisterAssetSound( "sound/weapons/hmg/machgf2b.wav", "sound/weapons/machinegun/machgf2b.wav" );
+		weaponInfo->flashSound[2] = CG_RegisterAssetSound( "sound/weapons/hmg/machgf3b.wav", "sound/weapons/machinegun/machgf3b.wav" );
+		weaponInfo->flashSound[3] = CG_RegisterAssetSound( "sound/weapons/hmg/machgf4b.wav", "sound/weapons/machinegun/machgf4b.wav" );
 		weaponInfo->ejectBrassFunc = CG_MachineGunEjectBrass;
 		cgs.media.bulletExplosionShader = trap_R_RegisterShader( "bulletExplosion" );
 		break;
@@ -853,9 +915,9 @@ void CG_RegisterItemVisuals( int itemNum ) {
 	memset( itemInfo, 0, sizeof( *itemInfo ) );
 	itemInfo->registered = qtrue;
 
-	itemInfo->models[0] = trap_R_RegisterModel( item->world_model[0] );
+	itemInfo->models[0] = trap_R_RegisterModel( CG_AssetPath( item->world_model[0] ) );
 
-	itemInfo->icon = trap_R_RegisterShader( item->icon );
+	itemInfo->icon = CG_RegisterAssetShader( item->icon );
 
 	if ( item->giType == IT_WEAPON ) {
 		CG_RegisterWeapon( item->giTag );

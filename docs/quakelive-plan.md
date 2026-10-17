@@ -44,6 +44,8 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
 - [x] Phase 1 movement, the part with clear meaning: jump velocity, step
   height, acceleration, friction, swim and wade scales, auto-hop, no player clip.
 - [x] Fixed the QVM interpreter rounding float-to-int casts on non-x86 hosts.
+- [x] `make-ql-pak.py` builds Quake Live's HMG assets and maps into a pk3 from
+  the player's own copy (`docs/baseql-ql-pak.md`).
 - [ ] Next in phase 1: the rest of movement (PQL air control, step/ramp/chain
   jumps, crouch slide) and armor, once their rules can be checked against a
   source; lag compensation; spawn selection.
