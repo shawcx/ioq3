@@ -198,6 +198,14 @@ Linux, Windows, macOS and Emscripten, with QVMs and native libraries both buildi
   real QL, then compare them numerically with `baseql`.
 - **Weapons and items:** diff `baseql` cvar values against a cvar dump from the
   QL dedicated server.
+- **Client prediction:** run `ioq3ded` and the client on one machine, connected
+  over UDP rather than loopback, with `sv_packetdelay 100` and `cl_packetdelay
+  100`. Loopback ignores the packet delay, and with no latency the client replays
+  almost no commands, so prediction bugs don't show. Compare predicted events
+  (`cg_debugEvents 1`) against the server's rate, and watch `cg_showmiss 1`
+  for movement errors. "changed predicted event" doesn't catch extra predicted
+  events. Checked this way: a cgame that ignored `CS_TUNING` updates predicted
+  14 shots where the server fired 8; the real cgame predicted 8.
 - **Stability:** `code/baseql/tools/smoketest.sh <build/Release> <qlds dir>`
   starts `ioq3ded` on a QL map with three bots and checks that the QVM, AAS and
   bots load, someone scores a kill, and nothing crashes. Extend it per mode.
