@@ -83,16 +83,29 @@ static void G_UpdateWeaponCvar( vmCvar_t *vmCvar, const char *defaultString ) {
 ================
 G_SendTuning
 
-Applies the shared tuning cvars locally and sends them to clients.
+Applies the shared tuning cvars locally and sends them to clients. Values are
+sent as the cvars' own strings rather than formatted, so the game and cgame
+parse exactly the same text. A value with characters that can't be in a number
+(which could also upset COM_Parse on the other side) sends the default instead.
 ================
 */
 static void G_SendTuning( void ) {
-	char	values[MAX_STRING_CHARS];
-	int		i;
+	char		values[MAX_STRING_CHARS];
+	const char	*value, *s;
+	int			i;
 
 	values[0] = '\0';
 	for ( i = 0 ; i < BG_NumTuningVars() ; i++ ) {
-		Q_strcat( values, sizeof( values ), va( "%s%i", i ? " " : "", bgTuningCvars[i].integer ) );
+		value = bgTuningCvars[i].string;
+		for ( s = value ; *s && strchr( "0123456789.-+eEf", *s ) ; s++ ) {
+		}
+		if ( !value[0] || *s ) {
+			value = BG_TuningVarDefault( i );
+		}
+		if ( i ) {
+			Q_strcat( values, sizeof( values ), " " );
+		}
+		Q_strcat( values, sizeof( values ), value );
 	}
 
 	BG_SetTuning( values );

@@ -731,6 +731,16 @@ typedef struct {
 	int			weaponReload[WP_NUM_WEAPONS];	// weapon_reload_*: msec between shots
 	int			weaponDropTime;					// pmove_WeaponDropTime
 	int			weaponRaiseTime;				// pmove_WeaponRaiseTime
+	float		jumpVelocity;					// pmove_JumpVelocity
+	float		stepHeight;						// pmove_StepHeight
+	float		walkAccel;						// pmove_WalkAccel
+	float		walkFriction;					// pmove_WalkFriction
+	float		airAccel;						// pmove_AirAccel
+	float		waterSwimScale;					// pmove_WaterSwimScale: speed when swimming
+	float		waterWadeScale;					// pmove_WaterWadeScale: speed when walking in water
+	float		grapplePullSpeed;				// pmove_velocity_gh
+	int			autoHop;						// pmove_AutoHop: holding jump keeps jumping
+	int			noPlayerClip;					// pmove_noPlayerClip: players pass through each other
 } bgTuning_t;
 
 extern bgTuning_t	bg_tuning;

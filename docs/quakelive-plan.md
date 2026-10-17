@@ -41,8 +41,12 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
 - [x] Phase 1 items: respawn times, first powerup spawn delay, item class
   switches, starting health and armor, unlimited ammo, respawn delays.
 - [x] Fixed upstream's QVM build not tracking headers (`ac188a4c`).
-- [ ] Next in phase 1: movement and armor, once their rules can be checked
-  against a source; lag compensation; spawn selection.
+- [x] Phase 1 movement, the part with clear meaning: jump velocity, step
+  height, acceleration, friction, swim and wade scales, auto-hop, no player clip.
+- [x] Fixed the QVM interpreter rounding float-to-int casts on non-x86 hosts.
+- [ ] Next in phase 1: the rest of movement (PQL air control, step/ramp/chain
+  jumps, crouch slide) and armor, once their rules can be checked against a
+  source; lag compensation; spawn selection.
 
 ## Ground rules
 

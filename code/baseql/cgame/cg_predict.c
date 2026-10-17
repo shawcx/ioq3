@@ -449,6 +449,9 @@ void CG_PredictPlayerState( void ) {
 	else {
 		cg_pmove.tracemask = MASK_PLAYERSOLID;
 	}
+	if ( bg_tuning.noPlayerClip ) {
+		cg_pmove.tracemask &= ~CONTENTS_BODY;
+	}
 	if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) {
 		cg_pmove.tracemask &= ~CONTENTS_BODY;	// spectators can fly through bodies
 	}

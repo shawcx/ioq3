@@ -95,10 +95,31 @@ as in QL, the values come from these cvars and factories.
 Health, armor and holdable respawn times (35, 25 and 60 seconds) have no QL
 cvars and stay vanilla.
 
+## Movement
+
+| Cvar | Default | Meaning |
+|---|---|---|
+| `pmove_JumpVelocity` | 275 (270) | upward speed of a jump |
+| `pmove_StepHeight` | 22 (18) | highest step players walk up |
+| `pmove_WalkAccel` | 10 | ground acceleration |
+| `pmove_WalkFriction` | 6 | ground friction |
+| `pmove_AirAccel` | 1 | air acceleration |
+| `pmove_WaterSwimScale` | 0.6 (0.5) | speed scale when swimming |
+| `pmove_WaterWadeScale` | 0.8 (0.5) | speed scale when walking in water. Vanilla used the swim scale here; splitting them is an interpretation of QL's two cvars |
+| `pmove_velocity_gh` | 800 | grappling hook pull speed |
+| `pmove_AutoHop` | 1 (0) | holding jump jumps again on landing |
+| `pmove_noPlayerClip` | 0 | players pass through each other |
+
+QL's other `pmove_*` cvars (step, ramp, chain and double jumps, air control,
+crouch slide, the jump velocity formula) aren't implemented: there's no public
+description of what they do to check against.
+
 ## How shared values reach clients
 
-`weapon_reload_*`, `pmove_WeaponDropTime` and `pmove_WeaponRaiseTime` affect
-player movement prediction, so clients need the same values as the server. The
-game sends them in configstring `CS_TUNING` (26) whenever one changes, and the
-game and cgame both apply that string with `BG_SetTuning`
-(`code/baseql/game/bg_tuning.c`). The other cvars only matter on the server.
+`weapon_reload_*` and the `pmove_*` cvars affect player movement prediction, so
+clients need the same values as the server. The game sends the cvars' strings
+in configstring `CS_TUNING` (26) whenever one changes, and the game and cgame
+both apply that string with `BG_SetTuning` (`code/baseql/game/bg_tuning.c`).
+Sending the strings rather than formatting the values means both sides parse
+the same text; a value with characters that can't be in a number sends the
+default. The other cvars only matter on the server.

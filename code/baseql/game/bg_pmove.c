@@ -365,8 +365,8 @@ static qboolean PM_CheckJump( void ) {
 		return qfalse;
 	}
 
-	// must wait for jump to be released
-	if ( pm->ps->pm_flags & PMF_JUMP_HELD ) {
+	// must wait for jump to be released, unless auto-hop is on
+	if ( ( pm->ps->pm_flags & PMF_JUMP_HELD ) && !bg_tuning.autoHop ) {
 		// clear upmove so cmdscale doesn't lower running speed
 		pm->cmd.upmove = 0;
 		return qfalse;
@@ -377,7 +377,7 @@ static qboolean PM_CheckJump( void ) {
 	pm->ps->pm_flags |= PMF_JUMP_HELD;
 
 	pm->ps->groundEntityNum = ENTITYNUM_NONE;
-	pm->ps->velocity[2] = JUMP_VELOCITY;
+	pm->ps->velocity[2] = bg_tuning.jumpVelocity;
 	PM_AddEvent( EV_JUMP );
 
 	if ( pm->cmd.forwardmove >= 0 ) {
@@ -675,7 +675,7 @@ static void PM_GrappleMove( void ) {
 	if (vlen <= 100)
 		VectorScale(vel, 10 * vlen, vel);
 	else
-		VectorScale(vel, 800, vel);
+		VectorScale(vel, bg_tuning.grapplePullSpeed, vel);
 
 	VectorCopy(vel, pm->ps->velocity);
 
@@ -760,7 +760,7 @@ static void PM_WalkMove( void ) {
 		float	waterScale;
 
 		waterScale = pm->waterlevel / 3.0;
-		waterScale = 1.0 - ( 1.0 - pm_swimScale ) * waterScale;
+		waterScale = 1.0 - ( 1.0 - bg_tuning.waterWadeScale ) * waterScale;
 		if ( wishspeed > pm->ps->speed * waterScale ) {
 			wishspeed = pm->ps->speed * waterScale;
 		}
@@ -1791,6 +1791,12 @@ void trap_SnapVector( float *v );
 
 void PmoveSingle (pmove_t *pmove) {
 	pm = pmove;
+
+	// baseql: Quake Live's movement cvars, see bg_tuning.c
+	pm_accelerate = bg_tuning.walkAccel;
+	pm_airaccelerate = bg_tuning.airAccel;
+	pm_friction = bg_tuning.walkFriction;
+	pm_swimScale = bg_tuning.waterSwimScale;
 
 	// this counter lets us debug movement problems with a journal
 	// by setting a conditional breakpoint fot the previous frame

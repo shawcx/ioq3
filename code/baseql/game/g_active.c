@@ -914,6 +914,9 @@ void ClientThink_real( gentity_t *ent ) {
 	else {
 		pm.tracemask = MASK_PLAYERSOLID;
 	}
+	if ( bg_tuning.noPlayerClip ) {
+		pm.tracemask &= ~CONTENTS_BODY;
+	}
 	pm.trace = trap_Trace;
 	pm.pointcontents = trap_PointContents;
 	pm.debugLevel = g_debugMove.integer;
