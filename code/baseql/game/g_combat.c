@@ -105,8 +105,8 @@ void TossClientItems( gentity_t *self ) {
 		Drop_Item( self, item, 0 );
 	}
 
-	// drop all the powerups if not in teamplay
-	if ( g_gametype.integer != GT_TEAM ) {
+	// drop all the powerups
+	if ( g_dropPowerups.integer ) {
 		angle = 45;
 		for ( i = 1 ; i < PW_NUM_POWERUPS ; i++ ) {
 			if ( self->client->ps.powerups[ i ] > level.time ) {
@@ -605,8 +605,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	self->r.maxs[2] = DEAD_HEIGHT;
 
 	// don't allow respawn until the death anim is done
-	// g_forcerespawn may force spawning at some later time
-	self->client->respawnTime = level.time + 1700;
+	// players can respawn after g_respawn_delay_min, and must after g_respawn_delay_max
+	self->client->respawnTime = level.time + g_respawn_delay_min.integer;
 
 	// remove powerups
 	memset( self->client->ps.powerups, 0, sizeof(self->client->ps.powerups) );

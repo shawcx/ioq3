@@ -74,6 +74,27 @@ and cgame both use `BG_ShotgunPellet`.
 Vanilla's team deathmatch rule (machinegun 5 damage, 50 starting ammo) is gone;
 as in QL, the values come from these cvars and factories.
 
+## Items and spawning
+
+| Cvar | Default | Meaning |
+|---|---|---|
+| `g_weaponRespawn` | 5 | seconds before a weapon respawns. Vanilla's team deathmatch value (30, `g_weaponTeamRespawn`) is gone; the built-in `tdm` factory sets 30 |
+| `g_ammoRespawn` | 40 | seconds before ammo respawns |
+| `g_powerupRespawn` | 120 | seconds before a powerup respawns |
+| `g_spawnDelay_powerup` | 45 | powerups first appear this many seconds into the map... |
+| `g_spawnDelayRandom_powerup` | 15 | ...plus or minus up to this many (vanilla hardcodes 45 ± 15) |
+| `g_spawnItemWeapons`, `g_spawnItemAmmo`, `g_spawnItemArmor`, `g_spawnItemHealth`, `g_spawnItemPowerup`, `g_spawnItemHoldable` | 1 | 0 stops that class of items spawning |
+| `g_startingHealth` | 100 | max health, scaled by the player's handicap; health above it counts down |
+| `g_startingHealthBonus` | 25 | extra health at spawn, which counts down (vanilla: max + 25) |
+| `g_startingArmor` | 0 | armor at spawn |
+| `g_infiniteAmmo` | 0 | 1 gives unlimited ammo for every weapon |
+| `g_dropPowerups` | 1 | dead players drop their powerups (vanilla: not in team deathmatch) |
+| `g_respawn_delay_min` | 2100 (1700) | msec after dying before a player can respawn |
+| `g_respawn_delay_max` | 2400 | msec after dying when a player respawns without pressing anything. Replaces `g_forcerespawn` (20 s). This reading of QL's cvar is an interpretation |
+
+Health, armor and holdable respawn times (35, 25 and 60 seconds) have no QL
+cvars and stay vanilla.
+
 ## How shared values reach clients
 
 `weapon_reload_*`, `pmove_WeaponDropTime` and `pmove_WeaponRaiseTime` affect

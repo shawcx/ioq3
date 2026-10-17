@@ -28,7 +28,8 @@
     "basegt": "tdm",
     "cvars": {
       "timelimit": "15",
-      "fraglimit": "150"
+      "fraglimit": "150",
+      "g_weaponRespawn": "30"
     }
   },
   {

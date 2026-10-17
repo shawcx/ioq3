@@ -62,13 +62,28 @@ vmCvar_t	g_nailspread;
 vmCvar_t	g_nailspeed;
 vmCvar_t	g_nailbounce;
 vmCvar_t	g_nailbouncepercentage;
-vmCvar_t	g_forcerespawn;
+vmCvar_t	g_startingHealth;
+vmCvar_t	g_startingHealthBonus;
+vmCvar_t	g_startingArmor;
+vmCvar_t	g_ammoRespawn;
+vmCvar_t	g_powerupRespawn;
+vmCvar_t	g_spawnDelay_powerup;
+vmCvar_t	g_spawnDelayRandom_powerup;
+vmCvar_t	g_spawnItemAmmo;
+vmCvar_t	g_spawnItemArmor;
+vmCvar_t	g_spawnItemHealth;
+vmCvar_t	g_spawnItemHoldable;
+vmCvar_t	g_spawnItemPowerup;
+vmCvar_t	g_spawnItemWeapons;
+vmCvar_t	g_infiniteAmmo;
+vmCvar_t	g_respawn_delay_min;
+vmCvar_t	g_respawn_delay_max;
+vmCvar_t	g_dropPowerups;
 vmCvar_t	g_inactivity;
 vmCvar_t	g_debugMove;
 vmCvar_t	g_debugDamage;
 vmCvar_t	g_debugAlloc;
 vmCvar_t	g_weaponRespawn;
-vmCvar_t	g_weaponTeamRespawn;
 vmCvar_t	g_motd;
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
@@ -158,9 +173,24 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_nailspeed, "g_nailspeed", "1000", 0, 0, qtrue  },
 	{ &g_nailbounce, "g_nailbounce", "1", 0, 0, qtrue  },
 	{ &g_nailbouncepercentage, "g_nailbouncepercentage", "65", 0, 0, qtrue  },
-	{ &g_weaponRespawn, "g_weaponrespawn", "5", 0, 0, qtrue  },
-	{ &g_weaponTeamRespawn, "g_weaponTeamRespawn", "30", 0, 0, qtrue },
-	{ &g_forcerespawn, "g_forcerespawn", "20", 0, 0, qtrue },
+	{ &g_startingHealth, "g_startingHealth", "100", 0, 0, qtrue  },
+	{ &g_startingHealthBonus, "g_startingHealthBonus", "25", 0, 0, qtrue  },
+	{ &g_startingArmor, "g_startingArmor", "0", 0, 0, qtrue  },
+	{ &g_ammoRespawn, "g_ammoRespawn", "40", 0, 0, qtrue  },
+	{ &g_powerupRespawn, "g_powerupRespawn", "120", 0, 0, qtrue  },
+	{ &g_spawnDelay_powerup, "g_spawnDelay_powerup", "45", 0, 0, qtrue  },
+	{ &g_spawnDelayRandom_powerup, "g_spawnDelayRandom_powerup", "15", 0, 0, qtrue  },
+	{ &g_spawnItemAmmo, "g_spawnItemAmmo", "1", 0, 0, qtrue  },
+	{ &g_spawnItemArmor, "g_spawnItemArmor", "1", 0, 0, qtrue  },
+	{ &g_spawnItemHealth, "g_spawnItemHealth", "1", 0, 0, qtrue  },
+	{ &g_spawnItemHoldable, "g_spawnItemHoldable", "1", 0, 0, qtrue  },
+	{ &g_spawnItemPowerup, "g_spawnItemPowerup", "1", 0, 0, qtrue  },
+	{ &g_spawnItemWeapons, "g_spawnItemWeapons", "1", 0, 0, qtrue  },
+	{ &g_infiniteAmmo, "g_infiniteAmmo", "0", 0, 0, qtrue  },
+	{ &g_respawn_delay_min, "g_respawn_delay_min", "2100", 0, 0, qtrue  },
+	{ &g_respawn_delay_max, "g_respawn_delay_max", "2400", 0, 0, qtrue  },
+	{ &g_dropPowerups, "g_dropPowerups", "1", 0, 0, qtrue  },
+	{ &g_weaponRespawn, "g_weaponRespawn", "5", 0, 0, qtrue  },
 	{ &g_inactivity, "g_inactivity", "0", 0, 0, qtrue },
 	{ &g_debugMove, "g_debugMove", "0", 0, 0, qfalse },
 	{ &g_debugDamage, "g_debugDamage", "0", 0, 0, qfalse },

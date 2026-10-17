@@ -691,6 +691,25 @@ static void ClientCleanName(const char *in, char *out, int outSize)
 
 /*
 ===========
+G_MaxHealth
+
+baseql: g_startingHealth is the max health, scaled by the handicap percentage
+===========
+*/
+static int G_MaxHealth( const char *userinfo ) {
+	int		handicap, health;
+
+	handicap = atoi( Info_ValueForKey( userinfo, "handicap" ) );
+	if ( handicap < 1 || handicap > 100 ) {
+		handicap = 100;
+	}
+	health = g_startingHealth.integer * handicap / 100;
+	return health < 1 ? 1 : health;
+}
+
+
+/*
+===========
 ClientUserInfoChanged
 
 Called from ClientConnect when the player first connects and
@@ -702,7 +721,7 @@ if desired.
 */
 void ClientUserinfoChanged( int clientNum ) {
 	gentity_t *ent;
-	int		teamTask, teamLeader, health;
+	int		teamTask, teamLeader;
 	char	*s;
 	char	model[MAX_QPATH];
 	char	headModel[MAX_QPATH];
@@ -757,18 +776,10 @@ void ClientUserinfoChanged( int clientNum ) {
 	if (client->ps.powerups[PW_GUARD]) {
 		client->pers.maxHealth = 200;
 	} else {
-		health = atoi( Info_ValueForKey( userinfo, "handicap" ) );
-		client->pers.maxHealth = health;
-		if ( client->pers.maxHealth < 1 || client->pers.maxHealth > 100 ) {
-			client->pers.maxHealth = 100;
-		}
+		client->pers.maxHealth = G_MaxHealth( userinfo );
 	}
 #else
-	health = atoi( Info_ValueForKey( userinfo, "handicap" ) );
-	client->pers.maxHealth = health;
-	if ( client->pers.maxHealth < 1 || client->pers.maxHealth > 100 ) {
-		client->pers.maxHealth = 100;
-	}
+	client->pers.maxHealth = G_MaxHealth( userinfo );
 #endif
 	client->ps.stats[STAT_MAX_HEALTH] = client->pers.maxHealth;
 
@@ -1139,10 +1150,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	trap_GetUserinfo( index, userinfo, sizeof(userinfo) );
 	// set max health
-	client->pers.maxHealth = atoi( Info_ValueForKey( userinfo, "handicap" ) );
-	if ( client->pers.maxHealth < 1 || client->pers.maxHealth > 100 ) {
-		client->pers.maxHealth = 100;
-	}
+	client->pers.maxHealth = G_MaxHealth( userinfo );
 	// clear entity values
 	client->ps.stats[STAT_MAX_HEALTH] = client->pers.maxHealth;
 	client->ps.eFlags = flags;
@@ -1174,9 +1182,15 @@ void ClientSpawn(gentity_t *ent) {
 	}
 	client->ps.ammo[WP_GAUNTLET] = -1;
 	client->ps.ammo[WP_GRAPPLING_HOOK] = -1;
+	if ( g_infiniteAmmo.integer ) {
+		for ( i = WP_GAUNTLET ; i < WP_NUM_WEAPONS ; i++ ) {
+			client->ps.ammo[i] = -1;
+		}
+	}
 
 	// health will count down towards max_health
-	ent->health = client->ps.stats[STAT_HEALTH] = client->ps.stats[STAT_MAX_HEALTH] + 25;
+	ent->health = client->ps.stats[STAT_HEALTH] = client->ps.stats[STAT_MAX_HEALTH] + g_startingHealthBonus.integer;
+	client->ps.stats[STAT_ARMOR] = g_startingArmor.integer;
 
 	G_SetOrigin( ent, spawn_origin );
 	VectorCopy( spawn_origin, client->ps.origin );

@@ -38,8 +38,11 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
   come with their mechanics in phase 1.
 - [x] Phase 1 weapons: QL values, the shotgun pattern, nailgun cvars, and the
   Heavy Machinegun (placeholder art; bots can't use it yet).
-- [ ] Next in phase 1: items (respawn and spawn delay cvars), then movement and
-  armor once their rules can be checked against a source.
+- [x] Phase 1 items: respawn times, first powerup spawn delay, item class
+  switches, starting health and armor, unlimited ammo, respawn delays.
+- [x] Fixed upstream's QVM build not tracking headers (`ac188a4c`).
+- [ ] Next in phase 1: movement and armor, once their rules can be checked
+  against a source; lag compensation; spawn selection.
 
 ## Ground rules
 

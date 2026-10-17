@@ -999,9 +999,9 @@ void ClientThink_real( gentity_t *ent ) {
 	if ( client->ps.stats[STAT_HEALTH] <= 0 ) {
 		// wait for the attack button to be pressed
 		if ( level.time > client->respawnTime ) {
-			// forcerespawn is to prevent users from waiting out powerups
-			if ( g_forcerespawn.integer > 0 && 
-				( level.time - client->respawnTime ) > g_forcerespawn.integer * 1000 ) {
+			// as in Quake Live, players respawn by themselves after g_respawn_delay_max
+			if ( g_respawn_delay_max.integer > 0 && level.time - client->respawnTime
+					> g_respawn_delay_max.integer - g_respawn_delay_min.integer ) {
 				ClientRespawn( ent );
 				return;
 			}

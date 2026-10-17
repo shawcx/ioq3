@@ -38,10 +38,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define	RESPAWN_ARMOR		25
 #define	RESPAWN_HEALTH		35
-#define	RESPAWN_AMMO		40
 #define	RESPAWN_HOLDABLE	60
 #define	RESPAWN_MEGAHEALTH	35//120
-#define	RESPAWN_POWERUP		120
 
 
 //======================================================================
@@ -112,7 +110,7 @@ int Pickup_Powerup( gentity_t *ent, gentity_t *other ) {
 		// anti-reward
 		client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_DENIEDREWARD;
 	}
-	return RESPAWN_POWERUP;
+	return g_powerupRespawn.integer;
 }
 
 //======================================================================
@@ -208,6 +206,10 @@ int Pickup_Holdable( gentity_t *ent, gentity_t *other ) {
 
 void Add_Ammo (gentity_t *ent, int weapon, int count)
 {
+	if ( g_infiniteAmmo.integer ) {
+		ent->client->ps.ammo[weapon] = -1;
+		return;
+	}
 	ent->client->ps.ammo[weapon] += count;
 	if ( ent->client->ps.ammo[weapon] > 200 ) {
 		ent->client->ps.ammo[weapon] = 200;
@@ -226,7 +228,7 @@ int Pickup_Ammo (gentity_t *ent, gentity_t *other)
 
 	Add_Ammo (other, ent->item->giTag, quantity);
 
-	return RESPAWN_AMMO;
+	return g_ammoRespawn.integer;
 }
 
 //======================================================================
@@ -264,11 +266,7 @@ int Pickup_Weapon (gentity_t *ent, gentity_t *other) {
 	if (ent->item->giTag == WP_GRAPPLING_HOOK)
 		other->client->ps.ammo[ent->item->giTag] = -1; // unlimited ammo
 
-	// team deathmatch has slow weapon respawns
-	if ( g_gametype.integer == GT_TEAM ) {
-		return g_weaponTeamRespawn.integer;
-	}
-
+	// as in Quake Live, team deathmatch's slower respawns come from its factory
 	return g_weaponRespawn.integer;
 }
 
@@ -701,7 +699,7 @@ void FinishSpawningItem( gentity_t *ent ) {
 	if ( ent->item->giType == IT_POWERUP ) {
 		float	respawn;
 
-		respawn = 45 + crandom() * 15;
+		respawn = g_spawnDelay_powerup.value + crandom() * g_spawnDelayRandom_powerup.value;
 		ent->s.eFlags |= EF_NODRAW;
 		ent->r.contents = 0;
 		ent->nextthink = level.time + respawn * 1000;
@@ -870,6 +868,42 @@ G_ItemDisabled
 int G_ItemDisabled( gitem_t *item ) {
 
 	char name[128];
+
+	// baseql: Quake Live's switches for whole classes of items
+	switch ( item->giType ) {
+	case IT_WEAPON:
+		if ( !g_spawnItemWeapons.integer ) {
+			return qtrue;
+		}
+		break;
+	case IT_AMMO:
+		if ( !g_spawnItemAmmo.integer ) {
+			return qtrue;
+		}
+		break;
+	case IT_ARMOR:
+		if ( !g_spawnItemArmor.integer ) {
+			return qtrue;
+		}
+		break;
+	case IT_HEALTH:
+		if ( !g_spawnItemHealth.integer ) {
+			return qtrue;
+		}
+		break;
+	case IT_POWERUP:
+		if ( !g_spawnItemPowerup.integer ) {
+			return qtrue;
+		}
+		break;
+	case IT_HOLDABLE:
+		if ( !g_spawnItemHoldable.integer ) {
+			return qtrue;
+		}
+		break;
+	default:
+		break;
+	}
 
 	Com_sprintf(name, sizeof(name), "disable_%s", item->classname);
 	return trap_Cvar_VariableIntegerValue( name );
