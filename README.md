@@ -456,6 +456,9 @@ the above locations, if desired.
                             for renderer cvars) like cvarlist which lists all cvars
 
   addbot random           - the bot name "random" now selects a random bot
+
+  map <map> [factory]     - an optional second argument is stored in g_factory,
+                            for mods with Quake Live style factories (baseql)
 ```
 
 

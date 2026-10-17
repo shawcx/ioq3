@@ -170,6 +170,12 @@ static void SV_Map_f( void ) {
 		return;
 	}
 
+	// "map <mapname> <factory>" as in Quake Live: pass the factory on to the
+	// game module in g_factory. Games without factories ignore it.
+	if ( Cmd_Argc() > 2 ) {
+		Cvar_Set( "g_factory", Cmd_Argv( 2 ) );
+	}
+
 	// force latched values to get set
 	Cvar_Get ("g_gametype", "0", CVAR_SERVERINFO | CVAR_USERINFO | CVAR_LATCH );
 
