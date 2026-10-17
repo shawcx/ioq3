@@ -307,6 +307,7 @@ typedef struct {
 		// little-endian "IBSP"
 
 #define BSP_VERSION			46
+#define BSP_VERSION_QL		47	// Quake Live: version 46 plus one trailing lump, which is ignored
 
 
 // there shouldn't be any problem with increasing these values at the
