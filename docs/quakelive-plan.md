@@ -20,8 +20,17 @@ What the tree already provides:
 - **This fork's own patches:** a low-ammo warning per weapon, demos that record
   and play back VoIP, better demo file names, `cg_gun*` without cheat protection.
 
-Gaps: BSP v46 only (`code/qcommon/qfiles.h`), no round-based modes, no
-match management, no widescreen-aware HUD.
+Gaps: no round-based modes, no match management, no widescreen-aware HUD.
+
+## Status
+
+- [x] `baseql` builds as its own mod (`cmake/baseql.cmake`, `-DBUILD_BASEQL=ON`),
+  native libraries and QVMs, with a CI workflow for Linux and Windows.
+- [x] QL maps load (BSP v47; pulled forward from phase 6 because it enables testing).
+- [x] Smoke test: `code/baseql/tools/smoketest.sh` runs `ioq3ded` with bots on a
+  QL map, using only the free QL dedicated server data.
+- [x] QL reference data collected (see ground rule 5).
+- [ ] Tuning cvars (phase 0) — next.
 
 ## Ground rules
 
@@ -40,8 +49,19 @@ match management, no widescreen-aware HUD.
 4. **Clean-room.** QL is closed source. Reimplement from observed behavior and
    public data; don't port decompiled code.
 5. **Get exact values from the free QL dedicated server**
-   (`steamcmd +app_update 349090`). Its `.factories` files and cvar defaults
-   give the real weapon, item and physics numbers.
+   (`steamcmd +login anonymous +app_update 349090`, build 1069 from June 2016,
+   protocol 91). What it provides:
+   - `scripts/factories.txt` in `baseq3/pak00.pk3`: all stock factories, as JSON.
+   - `cvarlist` after `map campgrounds ffa`: 530 cvars, including every
+     `weapon_reload_*`, `g_damage_*`, `g_splash*`, `g_knockback_*`,
+     `g_velocity_*`, `g_startingAmmo_*` and `pmove_*` default.
+   - `server_readme.txt`, `server.cfg`, `access.txt`, `mappool*.txt`.
+   - 149 maps with AAS files, usable for testing (`pak00.pk3`).
+
+   The server won't start without reaching Steam, even with `sv_serverType 0`.
+   Run it with outbound network only, `sv_serverType 0` and `sv_master 0`, and
+   no published ports. The x86 steamcmd doesn't run under Docker on Apple
+   Silicon; use an x86_64 Linux host. Keep the extracted files out of the repo.
 6. **Reuse GPL-2 code where it fits:** Unlagged (lag compensation), OpenArena
    gamecode (Elimination/Domination, as a base for the round-based modes),
    Quake3e (engine fixes).
@@ -60,7 +80,7 @@ match management, no widescreen-aware HUD.
   matches the server.
 - **Factories:** gametype presets made of a base gametype plus cvar overrides.
   Use Q3's own token format (COM_Parse-style braces), because the QVM can't use a
-  JSON library. Add an offline script that converts QL `.factories` files.
+  JSON library. Add an offline script that converts QL's `factories.txt`.
 - **Map pool:** a `mappool.txt` with `map|factory` entries drives map rotation.
 
 ### 1. Core gameplay
@@ -87,6 +107,9 @@ Already present: FFA, Duel (Tournament), TDM, CTF, 1-Flag CTF, Harvester.
 - Then, in order: Clan Arena → Freeze Tag → Attack & Defend → Domination →
   Red Rover / Infected → Race (checkpoint timer entities) → Instagib variants
   as factories.
+- QL maps already place the entities these need; baseql currently logs
+  "doesn't have a spawn function" for `team_dom_point` (Domination),
+  `race_point` (Race), `ammo_pack` (`g_ammoPack`) and `advertisement` (stub it).
 
 ### 3. Match management and server
 
@@ -136,9 +159,10 @@ candidates to send upstream; read upstream's AI/LLM contribution policy
 
 ### 6. Compatibility and bots (stretch)
 
-- **QL maps:** accept QL's BSP version alongside 46. I believe QL uses IBSP v47
-  with the same lump layout as v46; check that against a real QL map first.
-  This is an additive `qfiles.h` change.
+- **QL maps:** done. QL maps are IBSP v47: the 17 lumps of v46 plus one
+  trailing lump (multiples of 128 bytes, apparently advertisement data), checked
+  against all 149 stock maps. The engine accepts v47 and ignores the extra lump.
+  Remaining: QL's `scripts/arenas.txt` (13 KB) exceeds the game's 8 KB limit.
 - **QL demos:** optional playback of protocols 73/90/91. Needs QL's entity and
   playerState layout.
 - **Bots:** update botlib and the AI for the HMG, PQL movement and round-based
@@ -170,6 +194,8 @@ Linux, Windows, macOS and Emscripten, with QVMs and native libraries both buildi
   real QL, then compare them numerically with `baseql`.
 - **Weapons and items:** diff `baseql` cvar values against a cvar dump from the
   QL dedicated server.
-- **Stability:** smoke-test a dedicated server with bots in each mode.
+- **Stability:** `code/baseql/tools/smoketest.sh <build/Release> <qlds dir>`
+  starts `ioq3ded` on a QL map with three bots and checks that the QVM, AAS and
+  bots load, someone scores a kill, and nothing crashes. Extend it per mode.
 - **Vanilla baseline:** with `BUILD_BASEQL=OFF`, the `baseq3` and `missionpack`
   builds and their behavior must not change.
