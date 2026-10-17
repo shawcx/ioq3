@@ -50,6 +50,7 @@ Engine and game sources live in `code/`; build definitions live in `cmake/` (`cl
 - `q3_ui/` is the baseq3 menu UI. `ui/` is the Team Arena / missionpack script-driven UI.
 - `bg_*.c` (in `game/`) holds player movement and shared item data, compiled into both qagame and cgame so prediction matches the server.
 - The `missionpack` variant is the same source built with `MISSIONPACK` defined.
+- `baseql` is the Quake Live parity mod (plan: `docs/quakelive-plan.md`). It has its own copy of the game sources in `code/baseql/{game,cgame,ui}`, always built with `MISSIONPACK`, via `cmake/baseql.cmake` when `-DBUILD_BASEQL=ON`. Make baseql changes there, never in the upstream `game/`, `cgame/` or `ui/` directories.
 
 Each module is built two ways:
 1. **Native shared library**: `*_syscalls.c` provides `dllEntry` + `syscall` function pointer.

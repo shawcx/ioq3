@@ -32,15 +32,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 #include "g_local.h"
-#include "../botlib/botlib.h"
-#include "../botlib/be_aas.h"
-#include "../botlib/be_ea.h"
-#include "../botlib/be_ai_char.h"
-#include "../botlib/be_ai_chat.h"
-#include "../botlib/be_ai_gen.h"
-#include "../botlib/be_ai_goal.h"
-#include "../botlib/be_ai_move.h"
-#include "../botlib/be_ai_weap.h"
+#include "../../botlib/botlib.h"
+#include "../../botlib/be_aas.h"
+#include "../../botlib/be_ea.h"
+#include "../../botlib/be_ai_char.h"
+#include "../../botlib/be_ai_chat.h"
+#include "../../botlib/be_ai_gen.h"
+#include "../../botlib/be_ai_goal.h"
+#include "../../botlib/be_ai_move.h"
+#include "../../botlib/be_ai_weap.h"
 //
 #include "ai_main.h"
 #include "ai_dmq3.h"
@@ -55,7 +55,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "match.h"				//string matching types and vars
 
 // for the voice chats
-#include "../../ui/menudef.h" // sos001205 - for q3_ui also
+#include "../../../ui/menudef.h" // sos001205 - for q3_ui also
 
 // from aasfile.h
 #define AREACONTENTS_MOVER				1024

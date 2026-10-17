@@ -32,16 +32,16 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 #include "g_local.h"
-#include "../qcommon/q_shared.h"
-#include "../botlib/botlib.h"		//bot lib interface
-#include "../botlib/be_aas.h"
-#include "../botlib/be_ea.h"
-#include "../botlib/be_ai_char.h"
-#include "../botlib/be_ai_chat.h"
-#include "../botlib/be_ai_gen.h"
-#include "../botlib/be_ai_goal.h"
-#include "../botlib/be_ai_move.h"
-#include "../botlib/be_ai_weap.h"
+#include "../../qcommon/q_shared.h"
+#include "../../botlib/botlib.h"		//bot lib interface
+#include "../../botlib/be_aas.h"
+#include "../../botlib/be_ea.h"
+#include "../../botlib/be_ai_char.h"
+#include "../../botlib/be_ai_chat.h"
+#include "../../botlib/be_ai_gen.h"
+#include "../../botlib/be_ai_goal.h"
+#include "../../botlib/be_ai_move.h"
+#include "../../botlib/be_ai_weap.h"
 //
 #include "ai_main.h"
 #include "ai_dmq3.h"

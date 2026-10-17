@@ -166,6 +166,7 @@ The following CMake variables may be set, using `-D` on the command line.
   BUILD_GAME_LIBRARIES    - build the game shared libraries
   BUILD_GAME_QVMS         - build the game qvms
   BUILD_STANDALONE        - build binaries suited for stand-alone games
+  BUILD_BASEQL            - build the baseql mod (see docs/quakelive-plan.md)
 
   USE_RENDERER_DLOPEN     - build and use the renderer in a library
   USE_OPENAL              - use OpenAL where available

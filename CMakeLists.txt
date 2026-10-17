@@ -102,6 +102,7 @@ include(renderer_gl2)
 include(client)
 include(basegame)
 include(missionpack)
+include(baseql)
 
 include(post_configure)
 include(installer)
