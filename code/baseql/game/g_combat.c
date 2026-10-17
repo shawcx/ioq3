@@ -874,9 +874,9 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		VectorNormalize(dir);
 	}
 
-	knockback = damage;
-	if ( knockback > 200 ) {
-		knockback = 200;
+	knockback = (int)( damage * G_KnockbackScale( targ, attacker, mod ) );
+	if ( knockback > g_max_knockback.integer ) {
+		knockback = g_max_knockback.integer;
 	}
 	if ( targ->flags & FL_NO_KNOCKBACK ) {
 		knockback = 0;

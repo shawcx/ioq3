@@ -53,7 +53,9 @@ vmCvar_t	g_speed;
 vmCvar_t	g_gravity;
 vmCvar_t	g_cheats;
 vmCvar_t	g_knockback;
-vmCvar_t	g_quadfactor;
+vmCvar_t	g_quadDamageFactor;
+vmCvar_t	g_max_knockback;
+vmCvar_t	g_startingWeapons;
 vmCvar_t	g_forcerespawn;
 vmCvar_t	g_inactivity;
 vmCvar_t	g_debugMove;
@@ -141,7 +143,9 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_speed, "g_speed", "320", 0, 0, qtrue  },
 	{ &g_gravity, "g_gravity", "800", 0, 0, qtrue  },
 	{ &g_knockback, "g_knockback", "1000", 0, 0, qtrue  },
-	{ &g_quadfactor, "g_quadfactor", "3", 0, 0, qtrue  },
+	{ &g_quadDamageFactor, "g_quadDamageFactor", "3", 0, 0, qtrue  },
+	{ &g_max_knockback, "g_max_knockback", "200", 0, 0, qtrue  },
+	{ &g_startingWeapons, "g_startingWeapons", "3", 0, 0, qtrue  },
 	{ &g_weaponRespawn, "g_weaponrespawn", "5", 0, 0, qtrue  },
 	{ &g_weaponTeamRespawn, "g_weaponTeamRespawn", "30", 0, 0, qtrue },
 	{ &g_forcerespawn, "g_forcerespawn", "20", 0, 0, qtrue },
@@ -355,6 +359,8 @@ void G_RegisterCvars( void ) {
 		G_RemapTeamShaders();
 	}
 
+	G_RegisterTuningCvars();
+
 	// check some things
 	if ( g_gametype.integer < 0 || g_gametype.integer >= GT_MAX_GAME_TYPE ) {
 		G_Printf( "g_gametype %i is out of range, defaulting to 0\n", g_gametype.integer );
@@ -397,6 +403,8 @@ void G_UpdateCvars( void ) {
 	if (remapped) {
 		G_RemapTeamShaders();
 	}
+
+	G_UpdateTuningCvars();
 }
 
 /*

@@ -8,6 +8,8 @@ ioquake3 (ioq3): a maintained fork of the id Software Quake III Arena engine (C,
 
 There is no test suite or linter. CI (`.github/workflows/build.yml`) builds Linux, Windows, macOS, and Emscripten; "verify" means a clean build on the affected targets.
 
+baseql has a smoke test, `code/baseql/tools/smoketest.sh <build/Release> <qlds dir>`, which runs `ioq3ded` with bots on a Quake Live map. It needs the free Quake Live dedicated server (steamcmd app 349090) and an x86_64 Linux host.
+
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release   # or Debug
 cmake --build build                                       # -> build/Release/ (or build/Debug/)

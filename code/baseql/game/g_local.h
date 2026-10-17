@@ -596,6 +596,29 @@ void G_StartKamikaze( gentity_t *ent );
 void DeathmatchScoreboardMessage( gentity_t *ent );
 
 //
+// g_tuning.c
+//
+// baseql: per-weapon Quake Live tuning cvars that only the server needs.
+// A field is only registered if the weapon has that cvar.
+typedef struct {
+	vmCvar_t	damage;			// g_damage_<w>
+	vmCvar_t	splashDamage;	// g_splashdamage_<w>
+	vmCvar_t	splashRadius;	// g_splashradius_<w>
+	vmCvar_t	velocity;		// g_velocity_<w>: projectile speed
+	vmCvar_t	knockback;		// g_knockback_<w>: knockback scale
+	vmCvar_t	knockbackSelf;	// g_knockback_<w>_self: scale for self damage
+	vmCvar_t	startingAmmo;	// g_startingAmmo_<w>
+	qboolean	hasKnockbackSelf;
+} weaponTuning_t;
+
+extern weaponTuning_t	g_weaponTuning[WP_NUM_WEAPONS];
+
+void		G_RegisterTuningCvars( void );
+void		G_UpdateTuningCvars( void );
+weapon_t	G_WeaponForMeansOfDeath( int mod );
+float		G_KnockbackScale( gentity_t *targ, gentity_t *attacker, int mod );
+
+//
 // g_main.c
 //
 void MoveClientToIntermission( gentity_t *ent );
@@ -711,7 +734,9 @@ extern	vmCvar_t	g_needpass;
 extern	vmCvar_t	g_gravity;
 extern	vmCvar_t	g_speed;
 extern	vmCvar_t	g_knockback;
-extern	vmCvar_t	g_quadfactor;
+extern	vmCvar_t	g_quadDamageFactor;
+extern	vmCvar_t	g_max_knockback;
+extern	vmCvar_t	g_startingWeapons;
 extern	vmCvar_t	g_forcerespawn;
 extern	vmCvar_t	g_inactivity;
 extern	vmCvar_t	g_debugMove;

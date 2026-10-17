@@ -24,6 +24,7 @@ set(BASEQL_BG_SOURCES
     ${BASEQL_DIR}/game/bg_pmove.c
     ${BASEQL_DIR}/game/bg_slidemove.c
     ${BASEQL_DIR}/game/bg_lib.c
+    ${BASEQL_DIR}/game/bg_tuning.c
 )
 
 set(BASEQL_CGAME_SOURCES
@@ -79,6 +80,7 @@ set(BASEQL_GAME_SOURCES
     ${BASEQL_DIR}/game/g_target.c
     ${BASEQL_DIR}/game/g_team.c
     ${BASEQL_DIR}/game/g_trigger.c
+    ${BASEQL_DIR}/game/g_tuning.c
     ${BASEQL_DIR}/game/g_utils.c
     ${BASEQL_DIR}/game/g_weapon.c
     ${GAME_MODULE_SHARED_SOURCES}

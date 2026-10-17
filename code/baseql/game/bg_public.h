@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // because games can change separately from the main system version, we need a
 // second version that must match between game and cgame
 
-#define	GAME_VERSION		BASEGAME "-1"
+#define	GAME_VERSION		"baseql-1"
 
 #define	DEFAULT_GRAVITY		800
 #define	GIB_HEALTH			-40
@@ -84,6 +84,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define CS_FLAGSTATUS			23		// string indicating flag status in CTF
 #define CS_SHADERSTATE			24
 #define CS_BOTINFO				25
+#define CS_TUNING				26		// baseql: values of the shared tuning cvars, see BG_SetTuning
 
 #define	CS_ITEMS				27		// string of 0's and 1's that tell which items are present
 
@@ -709,6 +710,28 @@ void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );
 
 qboolean	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
+
+//
+// bg_tuning.c
+//
+// baseql: Quake Live tuning cvars that player movement prediction depends on.
+// The game owns the cvars and sends their values in CS_TUNING; the game and
+// cgame both apply that string with BG_SetTuning, so they use identical values.
+//
+#define BG_MAX_TUNING_VARS	64
+
+typedef struct {
+	int			weaponReload[WP_NUM_WEAPONS];	// weapon_reload_*: msec between shots
+	int			weaponDropTime;					// pmove_WeaponDropTime
+	int			weaponRaiseTime;				// pmove_WeaponRaiseTime
+} bgTuning_t;
+
+extern bgTuning_t	bg_tuning;
+
+int			BG_NumTuningVars( void );
+const char	*BG_TuningVarName( int index );
+const char	*BG_TuningVarDefault( int index );
+void		BG_SetTuning( const char *values );
 
 
 #define ARENAS_PER_TIER		4

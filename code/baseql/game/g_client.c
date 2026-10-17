@@ -1164,14 +1164,19 @@ void ClientSpawn(gentity_t *ent) {
 
 	client->ps.clientNum = index;
 
-	client->ps.stats[STAT_WEAPONS] = ( 1 << WP_MACHINEGUN );
-	if ( g_gametype.integer == GT_TEAM ) {
+	// g_startingWeapons has bit ( weapon - 1 ) set for each weapon, as in Quake Live
+	client->ps.stats[STAT_WEAPONS] = 0;
+	for ( i = WP_GAUNTLET ; i < WP_NUM_WEAPONS ; i++ ) {
+		if ( g_startingWeapons.integer & ( 1 << ( i - 1 ) ) ) {
+			client->ps.stats[STAT_WEAPONS] |= ( 1 << i );
+			client->ps.ammo[i] = g_weaponTuning[i].startingAmmo.integer;
+		}
+	}
+	// vanilla starts with half the machinegun ammo in team deathmatch
+	if ( g_gametype.integer == GT_TEAM && ( client->ps.stats[STAT_WEAPONS] & ( 1 << WP_MACHINEGUN ) ) ) {
 		client->ps.ammo[WP_MACHINEGUN] = 50;
-	} else {
-		client->ps.ammo[WP_MACHINEGUN] = 100;
 	}
 
-	client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_GAUNTLET );
 	client->ps.ammo[WP_GAUNTLET] = -1;
 	client->ps.ammo[WP_GRAPPLING_HOOK] = -1;
 

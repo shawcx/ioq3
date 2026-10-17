@@ -216,6 +216,7 @@ void CG_SetConfigValues( void ) {
 	cgs.scores1 = atoi( CG_ConfigString( CS_SCORES1 ) );
 	cgs.scores2 = atoi( CG_ConfigString( CS_SCORES2 ) );
 	cgs.levelStartTime = atoi( CG_ConfigString( CS_LEVEL_START_TIME ) );
+	BG_SetTuning( CG_ConfigString( CS_TUNING ) );
 	if( cgs.gametype == GT_CTF ) {
 		s = CG_ConfigString( CS_FLAGSTATUS );
 		cgs.redflag = s[0] - '0';
@@ -365,6 +366,9 @@ static void CG_ConfigStringModified( void ) {
 	}
 	else if ( num == CS_SHADERSTATE ) {
 		CG_ShaderStateChanged();
+	}
+	else if ( num == CS_TUNING ) {
+		BG_SetTuning( str );
 	}
 		
 }

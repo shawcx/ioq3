@@ -30,7 +30,11 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
 - [x] Smoke test: `code/baseql/tools/smoketest.sh` runs `ioq3ded` with bots on a
   QL map, using only the free QL dedicated server data.
 - [x] QL reference data collected (see ground rule 5).
-- [ ] Tuning cvars (phase 0) — next.
+- [x] Weapon tuning cvars, with vanilla defaults (`docs/baseql-cvars.md`): reload,
+  switch times, damage, splash, projectile speed, knockback, starting weapons
+  and ammo. Shared values reach clients in `CS_TUNING`.
+- [ ] Next in phase 0: factories and the map pool. Health, armor and `pmove_*`
+  physics cvars come with their mechanics in phase 1.
 
 ## Ground rules
 

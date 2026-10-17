@@ -105,7 +105,7 @@ qboolean CheckGauntletAttack( gentity_t *ent ) {
 
 	if (ent->client->ps.powerups[PW_QUAD] ) {
 		G_AddEvent( ent, EV_POWERUP_QUAD, 0 );
-		s_quadFactor = g_quadfactor.value;
+		s_quadFactor = g_quadDamageFactor.value;
 	} else {
 		s_quadFactor = 1;
 	}
@@ -115,7 +115,7 @@ qboolean CheckGauntletAttack( gentity_t *ent ) {
 	}
 #endif
 
-	damage = 50 * s_quadFactor;
+	damage = g_weaponTuning[WP_GAUNTLET].damage.integer * s_quadFactor;
 	G_Damage( traceEnt, ent, ent, forward, tr.endpos,
 		damage, 0, MOD_GAUNTLET );
 
@@ -155,10 +155,8 @@ void SnapVectorTowards( vec3_t v, vec3_t to ) {
 
 #ifdef MISSIONPACK
 #define CHAINGUN_SPREAD		600
-#define CHAINGUN_DAMAGE		7
 #endif
 #define MACHINEGUN_SPREAD	200
-#define	MACHINEGUN_DAMAGE	7
 #define	MACHINEGUN_TEAM_DAMAGE	5		// wimpier MG in teamplay
 
 void Bullet_Fire (gentity_t *ent, float spread, int damage, int mod ) {
@@ -265,7 +263,6 @@ SHOTGUN
 
 // DEFAULT_SHOTGUN_SPREAD and DEFAULT_SHOTGUN_COUNT	are in bg_public.h, because
 // client predicts same spreads
-#define	DEFAULT_SHOTGUN_DAMAGE	10
 
 qboolean ShotgunPellet( vec3_t start, vec3_t end, gentity_t *ent ) {
 	trace_t		tr;
@@ -290,7 +287,7 @@ qboolean ShotgunPellet( vec3_t start, vec3_t end, gentity_t *ent ) {
 		}
 
 		if ( traceEnt->takedamage) {
-			damage = DEFAULT_SHOTGUN_DAMAGE * s_quadFactor;
+			damage = g_weaponTuning[WP_SHOTGUN].damage.integer * s_quadFactor;
 #ifdef MISSIONPACK
 			if ( traceEnt->client && traceEnt->client->invulnerabilityTime > level.time ) {
 				if (G_InvulnerabilityEffect( traceEnt, forward, tr.endpos, impactpoint, bouncedir )) {
@@ -449,7 +446,7 @@ void weapon_railgun_fire (gentity_t *ent) {
 	int			passent;
 	gentity_t	*unlinkedEntities[MAX_RAIL_HITS];
 
-	damage = 100 * s_quadFactor;
+	damage = g_weaponTuning[WP_RAILGUN].damage.integer * s_quadFactor;
 
 	VectorMA (muzzle, 8192, forward, end);
 
@@ -614,7 +611,7 @@ void Weapon_LightningFire( gentity_t *ent ) {
 	gentity_t	*traceEnt, *tent;
 	int			damage, i, passent;
 
-	damage = 8 * s_quadFactor;
+	damage = g_weaponTuning[WP_LIGHTNING].damage.integer * s_quadFactor;
 
 	passent = ent->s.number;
 	for (i = 0; i < 10; i++) {
@@ -801,7 +798,7 @@ FireWeapon
 */
 void FireWeapon( gentity_t *ent ) {
 	if (ent->client->ps.powerups[PW_QUAD] ) {
-		s_quadFactor = g_quadfactor.value;
+		s_quadFactor = g_quadDamageFactor.value;
 	} else {
 		s_quadFactor = 1;
 	}
@@ -842,7 +839,7 @@ void FireWeapon( gentity_t *ent ) {
 		break;
 	case WP_MACHINEGUN:
 		if ( g_gametype.integer != GT_TEAM ) {
-			Bullet_Fire( ent, MACHINEGUN_SPREAD, MACHINEGUN_DAMAGE, MOD_MACHINEGUN );
+			Bullet_Fire( ent, MACHINEGUN_SPREAD, g_weaponTuning[WP_MACHINEGUN].damage.integer, MOD_MACHINEGUN );
 		} else {
 			Bullet_Fire( ent, MACHINEGUN_SPREAD, MACHINEGUN_TEAM_DAMAGE, MOD_MACHINEGUN );
 		}
@@ -873,7 +870,7 @@ void FireWeapon( gentity_t *ent ) {
 		weapon_proxlauncher_fire( ent );
 		break;
 	case WP_CHAINGUN:
-		Bullet_Fire( ent, CHAINGUN_SPREAD, CHAINGUN_DAMAGE, MOD_CHAINGUN );
+		Bullet_Fire( ent, CHAINGUN_SPREAD, g_weaponTuning[WP_CHAINGUN].damage.integer, MOD_CHAINGUN );
 		break;
 #endif
 	default:
