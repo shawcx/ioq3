@@ -66,11 +66,17 @@ function(add_qvm MODULE_NAME)
         set(ASM_FILE ${QVM_ASM_DIR}/${BASE_FILE}.asm)
         string(REPLACE "${CMAKE_BINARY_DIR}/" "" ASM_FILE_COMMENT ${ASM_FILE})
 
+        # the depfile makes header changes recompile the source too
+        set(DEP_FILE ${QVM_ASM_DIR}/${BASE_FILE}.d)
         add_custom_command(
             OUTPUT ${ASM_FILE}
+            COMMAND ${CMAKE_COMMAND} -DQ3CPP=${Q3CPP} "-DFLAGS=${LCC_FLAGS}" -DSOURCE=${SOURCE}
+                -DTARGET=${ASM_FILE} -DDEPFILE=${DEP_FILE} -P ${CMAKE_SOURCE_DIR}/cmake/utils/qvm_depfile.cmake
             COMMAND ${Q3LCC} ${LCC_FLAGS} -o ${ASM_FILE} ${SOURCE}
             DEPENDS ${SOURCE} qvm_tools ${Q3RCC} ${Q3CPP} ${Q3LCC}
-            COMMENT "Building C object ${ASM_FILE_COMMENT}")
+            DEPFILE ${DEP_FILE}
+            COMMENT "Building C object ${ASM_FILE_COMMENT}"
+            VERBATIM)
 
         list(APPEND ASM_FILES ${ASM_FILE})
     endforeach()
