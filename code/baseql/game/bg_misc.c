@@ -916,6 +916,40 @@ Only in One Flag CTF games
 	},
 #endif
 
+	// baseql: Quake Live's Heavy Machinegun. Its model isn't free to use, so it
+	// borrows the machinegun's for now.
+/*QUAKED weapon_hmg (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+*/
+	{
+		"weapon_hmg",
+		"sound/misc/w_pkup.wav",
+        { "models/weapons2/machinegun/machinegun.md3",
+		NULL, NULL, NULL},
+/* icon */		"icons/iconw_machinegun",
+/* pickup */	"Heavy Machinegun",
+		50,
+		IT_WEAPON,
+		WP_HMG,
+/* precache */ "",
+/* sounds */ ""
+	},
+
+/*QUAKED ammo_hmg (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+*/
+	{
+		"ammo_hmg",
+		"sound/misc/am_pkup.wav",
+        { "models/powerups/ammo/machinegunam.md3",
+		NULL, NULL, NULL},
+/* icon */		"icons/icona_machinegun",
+/* pickup */	"Heavy Bullets",
+		50,
+		IT_AMMO,
+		WP_HMG,
+/* precache */ "",
+/* sounds */ ""
+	},
+
 	// end of list marker
 	{NULL}
 };

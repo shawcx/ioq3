@@ -61,6 +61,7 @@ static weaponTuningDef_t	weaponTuningDefs[] = {
 	{ WP_PROX_LAUNCHER,		"pl",	"0",	"100",	"150",	NULL,		"1",	NULL,	"5" },
 	{ WP_CHAINGUN,			"cg",	"8",	NULL,	NULL,	NULL,		"1",	NULL,	"100" },
 #endif
+	{ WP_HMG,				"hmg",	"8",	NULL,	NULL,	NULL,		"1",	NULL,	"50" },
 };
 
 static const int	numWeaponTuningDefs = ARRAY_LEN( weaponTuningDefs );
@@ -206,6 +207,8 @@ weapon_t G_WeaponForMeansOfDeath( int mod ) {
 	case MOD_CHAINGUN:
 		return WP_CHAINGUN;
 #endif
+	case MOD_HMG:
+		return WP_HMG;
 	default:
 		return WP_NONE;
 	}

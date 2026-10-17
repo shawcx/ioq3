@@ -302,6 +302,10 @@ static void CG_Obituary( entityState_t *ent ) {
 			message = "got lead poisoning from";
 			message2 = "'s Chaingun";
 			break;
+		case MOD_HMG:
+			message = "was shredded by";
+			message2 = "'s Heavy Machinegun";
+			break;
 		case MOD_PROXIMITY_MINE:
 			message = "was too close to";
 			message2 = "'s Prox Mine";

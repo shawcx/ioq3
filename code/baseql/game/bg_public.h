@@ -327,6 +327,8 @@ typedef enum {
 	WP_PROX_LAUNCHER,
 	WP_CHAINGUN,
 #endif
+	WP_HMG,				// baseql: Quake Live's Heavy Machinegun, weapon 14 as in Quake Live
+						// because baseql always builds with MISSIONPACK
 
 	WP_NUM_WEAPONS
 } weapon_t;
@@ -608,7 +610,8 @@ typedef enum {
 	MOD_KAMIKAZE,
 	MOD_JUICED,
 #endif
-	MOD_GRAPPLE
+	MOD_GRAPPLE,
+	MOD_HMG				// baseql
 } meansOfDeath_t;
 
 

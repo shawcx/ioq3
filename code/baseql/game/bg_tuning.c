@@ -52,6 +52,7 @@ static bgTuningVar_t	bgTuningVars[] = {
 	{ "weapon_reload_prox",		"800",	&bg_tuning.weaponReload[WP_PROX_LAUNCHER] },
 	{ "weapon_reload_cg",		"50",	&bg_tuning.weaponReload[WP_CHAINGUN] },
 #endif
+	{ "weapon_reload_hmg",		"75",	&bg_tuning.weaponReload[WP_HMG] },
 	{ "pmove_WeaponDropTime",	"200",	&bg_tuning.weaponDropTime },
 	{ "pmove_WeaponRaiseTime",	"200",	&bg_tuning.weaponRaiseTime },
 };

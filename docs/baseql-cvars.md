@@ -25,6 +25,7 @@ An empty cell means the weapon has no such cvar.
 | Nailgun | `ng` | 1000 | 12 (20) |  |  |  | 1 |  | 10 |
 | Prox Launcher | `pl` | 800 | 0 | 100 | 150 |  | 1 |  | 5 |
 | Chaingun | `cg` | 50 (30) | 8 (7) |  |  |  | 1 |  | 100 |
+| Heavy Machinegun | `hmg` | 75 | 8 |  |  |  | 1 |  | 50 |
 
 - `weapon_reload_*`: msec between shots.
 - `g_velocity_*`: projectile speed.
@@ -35,6 +36,14 @@ An empty cell means the weapon has no such cvar.
 - The grappling hook is still vanilla's weapon hook. QL's is an offhand hook that
   damages and pulls players (`g_damage_gh`, `g_knockback_gh`), which baseql
   doesn't have yet.
+
+## Heavy Machinegun
+
+QL's Heavy Machinegun is weapon 14, as in QL, so `g_startingWeapons` bit 8192
+gives it and QL maps' `weapon_hmg` and `ammo_hmg` spawn. Its spread isn't
+known, so it uses the machinegun's. QL's model isn't free to use, so for now it
+borrows the machinegun's with an orange muzzle flash. Bots can't use it yet:
+botlib's weapon data only describes weapons 1 to 13.
 
 ## Shotgun and nailgun
 

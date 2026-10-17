@@ -838,6 +838,10 @@ void FireWeapon( gentity_t *ent ) {
 	case WP_MACHINEGUN:
 		Bullet_Fire( ent, MACHINEGUN_SPREAD, g_weaponTuning[WP_MACHINEGUN].damage.integer, MOD_MACHINEGUN );
 		break;
+	case WP_HMG:
+		// Quake Live's spread isn't known; use the machinegun's
+		Bullet_Fire( ent, MACHINEGUN_SPREAD, g_weaponTuning[WP_HMG].damage.integer, MOD_HMG );
+		break;
 	case WP_GRENADE_LAUNCHER:
 		weapon_grenadelauncher_fire( ent );
 		break;

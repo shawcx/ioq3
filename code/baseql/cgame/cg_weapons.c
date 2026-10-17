@@ -726,6 +726,17 @@ void CG_RegisterWeapon( int weaponNum ) {
 		cgs.media.bulletExplosionShader = trap_R_RegisterShader( "bulletExplosion" );
 		break;
 
+	case WP_HMG:
+		// placeholder: the machinegun with an orange flash
+		MAKERGB( weaponInfo->flashDlightColor, 1, 0.5f, 0 );
+		weaponInfo->flashSound[0] = trap_S_RegisterSound( "sound/weapons/machinegun/machgf1b.wav", qfalse );
+		weaponInfo->flashSound[1] = trap_S_RegisterSound( "sound/weapons/machinegun/machgf2b.wav", qfalse );
+		weaponInfo->flashSound[2] = trap_S_RegisterSound( "sound/weapons/machinegun/machgf3b.wav", qfalse );
+		weaponInfo->flashSound[3] = trap_S_RegisterSound( "sound/weapons/machinegun/machgf4b.wav", qfalse );
+		weaponInfo->ejectBrassFunc = CG_MachineGunEjectBrass;
+		cgs.media.bulletExplosionShader = trap_R_RegisterShader( "bulletExplosion" );
+		break;
+
 	case WP_SHOTGUN:
 		MAKERGB( weaponInfo->flashDlightColor, 1, 1, 0 );
 		weaponInfo->flashSound[0] = trap_S_RegisterSound( "sound/weapons/shotgun/sshotf1b.wav", qfalse );

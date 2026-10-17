@@ -36,7 +36,10 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
 - [x] Factories and the map pool (`docs/baseql-factories.md`), loading QL's own
   files unchanged. Phase 0 is done; health, armor and `pmove_*` physics cvars
   come with their mechanics in phase 1.
-- [ ] Next: phase 1.
+- [x] Phase 1 weapons: QL values, the shotgun pattern, nailgun cvars, and the
+  Heavy Machinegun (placeholder art; bots can't use it yet).
+- [ ] Next in phase 1: items (respawn and spawn delay cvars), then movement and
+  armor once their rules can be checked against a source.
 
 ## Ground rules
 
