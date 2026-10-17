@@ -56,6 +56,12 @@ vmCvar_t	g_knockback;
 vmCvar_t	g_quadDamageFactor;
 vmCvar_t	g_max_knockback;
 vmCvar_t	g_startingWeapons;
+vmCvar_t	g_damage_sg_outer;
+vmCvar_t	g_nailcount;
+vmCvar_t	g_nailspread;
+vmCvar_t	g_nailspeed;
+vmCvar_t	g_nailbounce;
+vmCvar_t	g_nailbouncepercentage;
 vmCvar_t	g_forcerespawn;
 vmCvar_t	g_inactivity;
 vmCvar_t	g_debugMove;
@@ -144,8 +150,14 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_gravity, "g_gravity", "800", 0, 0, qtrue  },
 	{ &g_knockback, "g_knockback", "1000", 0, 0, qtrue  },
 	{ &g_quadDamageFactor, "g_quadDamageFactor", "3", 0, 0, qtrue  },
-	{ &g_max_knockback, "g_max_knockback", "200", 0, 0, qtrue  },
+	{ &g_max_knockback, "g_max_knockback", "120", 0, 0, qtrue  },
 	{ &g_startingWeapons, "g_startingWeapons", "3", 0, 0, qtrue  },
+	{ &g_damage_sg_outer, "g_damage_sg_outer", "5", 0, 0, qtrue  },
+	{ &g_nailcount, "g_nailcount", "10", 0, 0, qtrue  },
+	{ &g_nailspread, "g_nailspread", "400", 0, 0, qtrue  },
+	{ &g_nailspeed, "g_nailspeed", "1000", 0, 0, qtrue  },
+	{ &g_nailbounce, "g_nailbounce", "1", 0, 0, qtrue  },
+	{ &g_nailbouncepercentage, "g_nailbouncepercentage", "65", 0, 0, qtrue  },
 	{ &g_weaponRespawn, "g_weaponrespawn", "5", 0, 0, qtrue  },
 	{ &g_weaponTeamRespawn, "g_weaponTeamRespawn", "30", 0, 0, qtrue },
 	{ &g_forcerespawn, "g_forcerespawn", "20", 0, 0, qtrue },

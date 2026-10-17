@@ -35,8 +35,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define	RANK_TIED_FLAG		0x4000
 
-#define DEFAULT_SHOTGUN_SPREAD	700
-#define DEFAULT_SHOTGUN_COUNT	11
+// baseql: Quake Live's shotgun, see BG_ShotgunPellet
+#define SHOTGUN_SPREAD			1000
+#define SHOTGUN_PELLETS			20
+#define SHOTGUN_OUTER_PELLETS	10		// the last 10 pellets are the outer ring
 
 #define	ITEM_RADIUS			15		// item sizes are needed for client side pickup detection
 
@@ -710,6 +712,8 @@ void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );
 
 qboolean	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
+
+void	BG_ShotgunPellet( int pellet, float *right, float *up );
 
 //
 // bg_tuning.c

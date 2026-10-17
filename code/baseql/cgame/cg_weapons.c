@@ -2042,10 +2042,9 @@ static void CG_ShotgunPattern( vec3_t origin, vec3_t origin2, int seed, int othe
 	PerpendicularVector( right, forward );
 	CrossProduct( forward, right, up );
 
-	// generate the "random" spread pattern
-	for ( i = 0 ; i < DEFAULT_SHOTGUN_COUNT ; i++ ) {
-		r = Q_crandom( &seed ) * DEFAULT_SHOTGUN_SPREAD * 16;
-		u = Q_crandom( &seed ) * DEFAULT_SHOTGUN_SPREAD * 16;
+	// the same fixed pattern as the server
+	for ( i = 0 ; i < SHOTGUN_PELLETS ; i++ ) {
+		BG_ShotgunPellet( i, &r, &u );
 		VectorMA( origin, 8192 * 16, forward, end);
 		VectorMA (end, r, right, end);
 		VectorMA (end, u, up, end);

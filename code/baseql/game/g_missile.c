@@ -42,7 +42,8 @@ void G_BounceMissile( gentity_t *ent, trace_t *trace ) {
 	VectorMA( velocity, -2*dot, trace->plane.normal, ent->s.pos.trDelta );
 
 	if ( ent->s.eFlags & EF_BOUNCE_HALF ) {
-		VectorScale( ent->s.pos.trDelta, 0.65, ent->s.pos.trDelta );
+		VectorScale( ent->s.pos.trDelta, ent->s.weapon == WP_NAILGUN ? g_nailbouncepercentage.value / 100 : 0.65,
+			ent->s.pos.trDelta );
 		// check for stop
 		if ( trace->plane.normal[2] > 0.2 && VectorLength( ent->s.pos.trDelta ) < 40 ) {
 			G_SetOrigin( ent, trace->endpos );
@@ -717,7 +718,6 @@ gentity_t *fire_grapple (gentity_t *self, vec3_t start, vec3_t dir) {
 fire_nail
 =================
 */
-#define NAILGUN_SPREAD	500
 
 gentity_t *fire_nail( gentity_t *self, vec3_t start, vec3_t forward, vec3_t right, vec3_t up ) {
 	gentity_t	*bolt;
@@ -736,6 +736,9 @@ gentity_t *fire_nail( gentity_t *self, vec3_t start, vec3_t forward, vec3_t righ
 	bolt->parent = self;
 	bolt->damage = g_weaponTuning[WP_NAILGUN].damage.integer;
 	bolt->methodOfDeath = MOD_NAIL;
+	if ( g_nailbounce.integer ) {
+		bolt->s.eFlags |= EF_BOUNCE_HALF;
+	}
 	bolt->clipmask = MASK_SHOT;
 	bolt->target_ent = NULL;
 
@@ -744,15 +747,15 @@ gentity_t *fire_nail( gentity_t *self, vec3_t start, vec3_t forward, vec3_t righ
 	VectorCopy( start, bolt->s.pos.trBase );
 
 	r = random() * M_PI * 2.0f;
-	u = sin(r) * crandom() * NAILGUN_SPREAD * 16;
-	r = cos(r) * crandom() * NAILGUN_SPREAD * 16;
+	u = sin(r) * crandom() * g_nailspread.value * 16;
+	r = cos(r) * crandom() * g_nailspread.value * 16;
 	VectorMA( start, 8192 * 16, forward, end);
 	VectorMA (end, r, right, end);
 	VectorMA (end, u, up, end);
 	VectorSubtract( end, start, dir );
 	VectorNormalize( dir );
 
-	scale = 555 + random() * 1800;
+	scale = g_nailspeed.value;
 	VectorScale( dir, scale, bolt->s.pos.trDelta );
 	SnapVector( bolt->s.pos.trDelta );
 

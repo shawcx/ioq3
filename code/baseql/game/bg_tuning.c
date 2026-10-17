@@ -33,7 +33,7 @@ typedef struct {
 	int			*value;
 } bgTuningVar_t;
 
-// Defaults are the vanilla values. The values in CS_TUNING are listed in
+// Defaults are Quake Live's. The values in CS_TUNING are listed in
 // the order of this table, so the game and cgame must be built from the same
 // source; GAME_VERSION guards against mixing them.
 static bgTuningVar_t	bgTuningVars[] = {
@@ -45,15 +45,15 @@ static bgTuningVar_t	bgTuningVars[] = {
 	{ "weapon_reload_lg",		"50",	&bg_tuning.weaponReload[WP_LIGHTNING] },
 	{ "weapon_reload_rg",		"1500",	&bg_tuning.weaponReload[WP_RAILGUN] },
 	{ "weapon_reload_pg",		"100",	&bg_tuning.weaponReload[WP_PLASMAGUN] },
-	{ "weapon_reload_bfg",		"200",	&bg_tuning.weaponReload[WP_BFG] },
-	{ "weapon_reload_gh",		"400",	&bg_tuning.weaponReload[WP_GRAPPLING_HOOK] },
+	{ "weapon_reload_bfg",		"300",	&bg_tuning.weaponReload[WP_BFG] },
+	{ "weapon_reload_gh",		"100",	&bg_tuning.weaponReload[WP_GRAPPLING_HOOK] },
 #ifdef MISSIONPACK
 	{ "weapon_reload_ng",		"1000",	&bg_tuning.weaponReload[WP_NAILGUN] },
 	{ "weapon_reload_prox",		"800",	&bg_tuning.weaponReload[WP_PROX_LAUNCHER] },
-	{ "weapon_reload_cg",		"30",	&bg_tuning.weaponReload[WP_CHAINGUN] },
+	{ "weapon_reload_cg",		"50",	&bg_tuning.weaponReload[WP_CHAINGUN] },
 #endif
 	{ "pmove_WeaponDropTime",	"200",	&bg_tuning.weaponDropTime },
-	{ "pmove_WeaponRaiseTime",	"250",	&bg_tuning.weaponRaiseTime },
+	{ "pmove_WeaponRaiseTime",	"200",	&bg_tuning.weaponRaiseTime },
 };
 
 static const int	bgNumTuningVars = ARRAY_LEN( bgTuningVars );

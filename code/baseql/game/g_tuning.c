@@ -37,28 +37,29 @@ typedef struct {
 	char		*splashDamage;
 	char		*splashRadius;
 	char		*velocity;
+	char		*knockback;
 	char		*knockbackSelf;
 	char		*startingAmmo;
 } weaponTuningDef_t;
 
-// Defaults are the vanilla values. Starting ammo is only used for weapons in
-// g_startingWeapons, which vanilla doesn't have; those defaults are Quake Live's.
+// Defaults are Quake Live's. The grappling hook's knockback stays at 1: in
+// Quake Live it is an offhand hook that damages players, which baseql's isn't.
 static weaponTuningDef_t	weaponTuningDefs[] = {
-	// weapon				suffix	damage	splash	radius	velocity	kb self	ammo
-	{ WP_GAUNTLET,			"g",	"50",	NULL,	NULL,	NULL,		NULL,	"-1" },
-	{ WP_MACHINEGUN,		"mg",	"7",	NULL,	NULL,	NULL,		NULL,	"100" },
-	{ WP_SHOTGUN,			"sg",	"10",	NULL,	NULL,	NULL,		NULL,	"10" },
-	{ WP_GRENADE_LAUNCHER,	"gl",	"100",	"100",	"150",	"700",		NULL,	"10" },
-	{ WP_ROCKET_LAUNCHER,	"rl",	"100",	"100",	"120",	"900",		"1",	"5" },
-	{ WP_LIGHTNING,			"lg",	"8",	NULL,	NULL,	NULL,		NULL,	"100" },
-	{ WP_RAILGUN,			"rg",	"100",	NULL,	NULL,	NULL,		NULL,	"5" },
-	{ WP_PLASMAGUN,			"pg",	"20",	"15",	"20",	"2000",		"1",	"50" },
-	{ WP_BFG,				"bfg",	"100",	"100",	"120",	"2000",		NULL,	"10" },
-	{ WP_GRAPPLING_HOOK,	"gh",	NULL,	NULL,	NULL,	"800",		NULL,	"-1" },
+	// weapon				suffix	damage	splash	radius	velocity	kb		kb self	ammo
+	{ WP_GAUNTLET,			"g",	"50",	NULL,	NULL,	NULL,		"1",	NULL,	"-1" },
+	{ WP_MACHINEGUN,		"mg",	"5",	NULL,	NULL,	NULL,		"1",	NULL,	"100" },
+	{ WP_SHOTGUN,			"sg",	"5",	NULL,	NULL,	NULL,		"1",	NULL,	"10" },
+	{ WP_GRENADE_LAUNCHER,	"gl",	"100",	"100",	"150",	"700",		"1.10",	NULL,	"10" },
+	{ WP_ROCKET_LAUNCHER,	"rl",	"100",	"84",	"120",	"1000",		"0.90",	"1.10",	"5" },
+	{ WP_LIGHTNING,			"lg",	"6",	NULL,	NULL,	NULL,		"1.75",	NULL,	"100" },
+	{ WP_RAILGUN,			"rg",	"80",	NULL,	NULL,	NULL,		"0.85",	NULL,	"5" },
+	{ WP_PLASMAGUN,			"pg",	"20",	"15",	"20",	"2000",		"1.10",	"1.30",	"50" },
+	{ WP_BFG,				"bfg",	"100",	"100",	"80",	"1800",		"1",	NULL,	"10" },
+	{ WP_GRAPPLING_HOOK,	"gh",	NULL,	NULL,	NULL,	"1800",		"1",	NULL,	"-1" },
 #ifdef MISSIONPACK
-	{ WP_NAILGUN,			"ng",	"20",	NULL,	NULL,	NULL,		NULL,	"10" },
-	{ WP_PROX_LAUNCHER,		"pl",	"0",	"100",	"150",	NULL,		NULL,	"5" },
-	{ WP_CHAINGUN,			"cg",	"7",	NULL,	NULL,	NULL,		NULL,	"100" },
+	{ WP_NAILGUN,			"ng",	"12",	NULL,	NULL,	NULL,		"1",	NULL,	"10" },
+	{ WP_PROX_LAUNCHER,		"pl",	"0",	"100",	"150",	NULL,		"1",	NULL,	"5" },
+	{ WP_CHAINGUN,			"cg",	"8",	NULL,	NULL,	NULL,		"1",	NULL,	"100" },
 #endif
 };
 
@@ -122,7 +123,7 @@ void G_RegisterTuningCvars( void ) {
 		G_RegisterWeaponCvar( &wt->splashDamage, "g_splashdamage_", def->suffix, "", def->splashDamage );
 		G_RegisterWeaponCvar( &wt->splashRadius, "g_splashradius_", def->suffix, "", def->splashRadius );
 		G_RegisterWeaponCvar( &wt->velocity, "g_velocity_", def->suffix, "", def->velocity );
-		G_RegisterWeaponCvar( &wt->knockback, "g_knockback_", def->suffix, "", "1" );
+		G_RegisterWeaponCvar( &wt->knockback, "g_knockback_", def->suffix, "", def->knockback );
 		G_RegisterWeaponCvar( &wt->knockbackSelf, "g_knockback_", def->suffix, "_self", def->knockbackSelf );
 		G_RegisterWeaponCvar( &wt->startingAmmo, "g_startingAmmo_", def->suffix, "", def->startingAmmo );
 		wt->hasKnockbackSelf = ( def->knockbackSelf != NULL );
@@ -160,7 +161,7 @@ void G_UpdateTuningCvars( void ) {
 		G_UpdateWeaponCvar( &wt->splashDamage, def->splashDamage );
 		G_UpdateWeaponCvar( &wt->splashRadius, def->splashRadius );
 		G_UpdateWeaponCvar( &wt->velocity, def->velocity );
-		G_UpdateWeaponCvar( &wt->knockback, "1" );
+		G_UpdateWeaponCvar( &wt->knockback, def->knockback );
 		G_UpdateWeaponCvar( &wt->knockbackSelf, def->knockbackSelf );
 		G_UpdateWeaponCvar( &wt->startingAmmo, def->startingAmmo );
 	}

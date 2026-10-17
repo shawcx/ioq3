@@ -29,7 +29,6 @@ static	float	s_quadFactor;
 static	vec3_t	forward, right, up;
 static	vec3_t	muzzle;
 
-#define NUM_NAILSHOTS 15
 
 /*
 ================
@@ -157,7 +156,6 @@ void SnapVectorTowards( vec3_t v, vec3_t to ) {
 #define CHAINGUN_SPREAD		600
 #endif
 #define MACHINEGUN_SPREAD	200
-#define	MACHINEGUN_TEAM_DAMAGE	5		// wimpier MG in teamplay
 
 void Bullet_Fire (gentity_t *ent, float spread, int damage, int mod ) {
 	trace_t		tr;
@@ -261,12 +259,12 @@ SHOTGUN
 ======================================================================
 */
 
-// DEFAULT_SHOTGUN_SPREAD and DEFAULT_SHOTGUN_COUNT	are in bg_public.h, because
-// client predicts same spreads
+// the pellet pattern is in bg_misc.c (BG_ShotgunPellet), because the client
+// draws the same pattern
 
-qboolean ShotgunPellet( vec3_t start, vec3_t end, gentity_t *ent ) {
+qboolean ShotgunPellet( vec3_t start, vec3_t end, gentity_t *ent, int damage ) {
 	trace_t		tr;
-	int			damage, i, passent;
+	int			i, passent;
 	gentity_t	*traceEnt;
 #ifdef MISSIONPACK
 	vec3_t		impactpoint, bouncedir;
@@ -287,7 +285,6 @@ qboolean ShotgunPellet( vec3_t start, vec3_t end, gentity_t *ent ) {
 		}
 
 		if ( traceEnt->takedamage) {
-			damage = g_weaponTuning[WP_SHOTGUN].damage.integer * s_quadFactor;
 #ifdef MISSIONPACK
 			if ( traceEnt->client && traceEnt->client->invulnerabilityTime > level.time ) {
 				if (G_InvulnerabilityEffect( traceEnt, forward, tr.endpos, impactpoint, bouncedir )) {
@@ -316,7 +313,7 @@ qboolean ShotgunPellet( vec3_t start, vec3_t end, gentity_t *ent ) {
 
 // this should match CG_ShotgunPattern
 void ShotgunPattern( vec3_t origin, vec3_t origin2, int seed, gentity_t *ent ) {
-	int			i;
+	int			i, damage;
 	float		r, u;
 	vec3_t		end;
 	vec3_t		localForward, localRight, localUp;
@@ -328,14 +325,15 @@ void ShotgunPattern( vec3_t origin, vec3_t origin2, int seed, gentity_t *ent ) {
 	PerpendicularVector( localRight, localForward );
 	CrossProduct( localForward, localRight, localUp );
 
-	// generate the "random" spread pattern
-	for ( i = 0 ; i < DEFAULT_SHOTGUN_COUNT ; i++ ) {
-		r = Q_crandom( &seed ) * DEFAULT_SHOTGUN_SPREAD * 16;
-		u = Q_crandom( &seed ) * DEFAULT_SHOTGUN_SPREAD * 16;
+	// Quake Live's fixed pattern; the outer ring has its own damage
+	for ( i = 0 ; i < SHOTGUN_PELLETS ; i++ ) {
+		BG_ShotgunPellet( i, &r, &u );
 		VectorMA( origin, 8192 * 16, localForward, end);
 		VectorMA (end, r, localRight, end);
 		VectorMA (end, u, localUp, end);
-		if( ShotgunPellet( origin, end, ent ) && !hitClient ) {
+		damage = ( i < SHOTGUN_PELLETS - SHOTGUN_OUTER_PELLETS ) ? g_weaponTuning[WP_SHOTGUN].damage.integer
+			: g_damage_sg_outer.integer;
+		if( ShotgunPellet( origin, end, ent, damage * s_quadFactor ) && !hitClient ) {
 			hitClient = qtrue;
 			ent->client->accuracy_hits++;
 		}
@@ -688,7 +686,7 @@ void Weapon_Nailgun_Fire (gentity_t *ent) {
 	gentity_t	*m;
 	int			count;
 
-	for( count = 0; count < NUM_NAILSHOTS; count++ ) {
+	for( count = 0; count < g_nailcount.integer; count++ ) {
 		m = fire_nail (ent, muzzle, forward, right, up );
 		m->damage *= s_quadFactor;
 		m->splashDamage *= s_quadFactor;
@@ -812,7 +810,7 @@ void FireWeapon( gentity_t *ent ) {
 	if( ent->s.weapon != WP_GRAPPLING_HOOK && ent->s.weapon != WP_GAUNTLET ) {
 #ifdef MISSIONPACK
 		if( ent->s.weapon == WP_NAILGUN ) {
-			ent->client->accuracy_shots += NUM_NAILSHOTS;
+			ent->client->accuracy_shots += g_nailcount.integer;
 		} else {
 			ent->client->accuracy_shots++;
 		}
@@ -838,11 +836,7 @@ void FireWeapon( gentity_t *ent ) {
 		weapon_supershotgun_fire( ent );
 		break;
 	case WP_MACHINEGUN:
-		if ( g_gametype.integer != GT_TEAM ) {
-			Bullet_Fire( ent, MACHINEGUN_SPREAD, g_weaponTuning[WP_MACHINEGUN].damage.integer, MOD_MACHINEGUN );
-		} else {
-			Bullet_Fire( ent, MACHINEGUN_SPREAD, MACHINEGUN_TEAM_DAMAGE, MOD_MACHINEGUN );
-		}
+		Bullet_Fire( ent, MACHINEGUN_SPREAD, g_weaponTuning[WP_MACHINEGUN].damage.integer, MOD_MACHINEGUN );
 		break;
 	case WP_GRENADE_LAUNCHER:
 		weapon_grenadelauncher_fire( ent );

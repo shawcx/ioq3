@@ -1608,3 +1608,32 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 	s->loopSound = ps->loopSound;
 	s->generic1 = ps->generic1;
 }
+
+/*
+================
+BG_ShotgunPellet
+
+baseql: Quake Live's shotgun fires SHOTGUN_PELLETS pellets in a fixed pattern
+of three rings: 5 inner, 5 middle and 10 outer. Gives one pellet's offset
+along the right and up vectors at 8192 * 16 units ahead, the same scale as
+vanilla's random spread. The ring layout is documented, but the radii and
+angles are an approximation.
+================
+*/
+void BG_ShotgunPellet( int pellet, float *right, float *up ) {
+	float	angle, radius;
+
+	if ( pellet < 5 ) {
+		radius = SHOTGUN_SPREAD * 16 / 3.0f;
+		angle = pellet * 72;
+	} else if ( pellet < 10 ) {
+		radius = SHOTGUN_SPREAD * 16 * 2 / 3.0f;
+		angle = 36 + ( pellet - 5 ) * 72;
+	} else {
+		radius = SHOTGUN_SPREAD * 16;
+		angle = 18 + ( pellet - 10 ) * 36;
+	}
+	angle = DEG2RAD( angle );
+	*right = radius * cos( angle );
+	*up = radius * sin( angle );
+}

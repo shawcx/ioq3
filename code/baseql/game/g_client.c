@@ -1172,11 +1172,6 @@ void ClientSpawn(gentity_t *ent) {
 			client->ps.ammo[i] = g_weaponTuning[i].startingAmmo.integer;
 		}
 	}
-	// vanilla starts with half the machinegun ammo in team deathmatch
-	if ( g_gametype.integer == GT_TEAM && ( client->ps.stats[STAT_WEAPONS] & ( 1 << WP_MACHINEGUN ) ) ) {
-		client->ps.ammo[WP_MACHINEGUN] = 50;
-	}
-
 	client->ps.ammo[WP_GAUNTLET] = -1;
 	client->ps.ammo[WP_GRAPPLING_HOOK] = -1;
 
