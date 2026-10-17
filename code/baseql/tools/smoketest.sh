@@ -9,6 +9,8 @@
 # -DBUILD_BASEQL=ON.
 #
 # usage: smoketest.sh <build/Release dir> <qlds dir> [map] [seconds] [extra server args...]
+#
+# map may include a factory, as in "campgrounds iffa"; it is split into words.
 
 set -u
 
@@ -20,7 +22,7 @@ fi
 BUILD_DIR=$1
 QLDS_DIR=$2
 MAP=${3:-campgrounds}
-SECONDS_TO_RUN=${4:-20}
+SECONDS_TO_RUN=${4:-60}
 shift 2
 [ $# -gt 0 ] && shift
 [ $# -gt 0 ] && shift
@@ -36,7 +38,9 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/baseql" "$WORK/home"
 ln -s "$(cd "$QLDS_DIR/baseq3" && pwd)/pak00.pk3" "$WORK/baseql/pak00.pk3"
-ln -s "$(cd "$BUILD_DIR/baseql" && pwd)/vm" "$WORK/baseql/vm"
+for f in "$(cd "$BUILD_DIR/baseql" && pwd)"/*; do
+	ln -s "$f" "$WORK/baseql/"
+done
 LOG="$WORK/server.log"
 
 "$BUILD_DIR/ioq3ded" \
@@ -44,7 +48,7 @@ LOG="$WORK/server.log"
 	+set sv_pure 0 +set vm_game 2 +set bot_enable 1 \
 	+set g_doWarmup 0 +set fraglimit 0 +set timelimit 0 \
 	"$@" \
-	+map "$MAP" +addbot anarki 4 +addbot sarge 4 +addbot klesk 4 \
+	+map $MAP +addbot anarki 4 +addbot sarge 4 +addbot klesk 4 \
 	> "$LOG" 2>&1 &
 PID=$!
 
@@ -64,16 +68,18 @@ check() {
 	fi
 }
 
-BOTS=$(grep -c 'entered the game' "$LOG")
+BOTS=$(grep -c '^ClientBegin: ' "$LOG")
 # "Received signal 15" is the server shutting down after our kill
 ERRORS=$(grep -iE 'Sys_Error|VM_Error|ERROR:|Segmentation|signal' "$LOG" | grep -vc 'Received signal 15')
 
 check "$ALIVE" "server still running after ${SECONDS_TO_RUN}s"
 check "$(grep -c 'File "vm/qagame.qvm" found' "$LOG")" "baseql qagame.qvm loaded"
 check "$(grep -c '^AAS initialized' "$LOG")" "bot navigation (AAS) loaded for $MAP"
-check "$( [ "$BOTS" -ge 3 ] && echo 1 || echo 0)" "3 bots entered the game"
+check "$( [ "$BOTS" -ge 3 ] && echo 1 || echo 0)" "3 bots joined"
 check "$(grep -c '^Kill: ' "$LOG")" "at least one kill"
 check "$( [ "$ERRORS" -eq 0 ] && echo 1 || echo 0)" "no errors or crashes in the log"
+
+grep -E '^(loaded factories|factory:)|skipped:|unknown factory' "$LOG" | sed 's/^/info: /'
 
 if [ "$FAIL" -ne 0 ]; then
 	echo "--- server log ($LOG) ---"

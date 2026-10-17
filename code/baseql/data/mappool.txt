@@ -1,0 +1,16 @@
+# baseql map pool: one map|factory per line, # starts a comment.
+# nextmap and startRandomMap choose from these. Set sv_mapPoolFile to use
+# another file. Factory ids are listed by reload_factories.
+q3dm6|ffa
+q3dm7|ffa
+q3dm13|ffa
+q3dm17|ffa
+q3tourney2|duel
+q3tourney4|duel
+q3tourney6|duel
+q3dm7|tdm
+q3dm12|tdm
+q3dm14|tdm
+q3ctf1|ctf
+q3ctf2|ctf
+q3ctf4|ctf

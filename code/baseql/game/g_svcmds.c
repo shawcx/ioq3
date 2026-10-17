@@ -473,6 +473,21 @@ qboolean	ConsoleCommand( void ) {
 		return qtrue;
 	}
 
+	if (Q_stricmp (cmd, "reload_factories") == 0) {
+		Svcmd_ReloadFactories_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "reload_mappool") == 0) {
+		Svcmd_ReloadMapPool_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "startRandomMap") == 0) {
+		Svcmd_StartRandomMap_f();
+		return qtrue;
+	}
+
 	if (Q_stricmp (cmd, "botlist") == 0) {
 		Svcmd_BotList_f();
 		return qtrue;

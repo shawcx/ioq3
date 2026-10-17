@@ -619,6 +619,34 @@ weapon_t	G_WeaponForMeansOfDeath( int mod );
 float		G_KnockbackScale( gentity_t *targ, gentity_t *attacker, int mod );
 
 //
+// g_json.c
+//
+typedef struct {
+	const char	*text;
+	const char	*p;
+	char		error[256];		// empty while there's no error
+} json_t;
+
+void		JSON_Init( json_t *js, const char *text );
+qboolean	JSON_Ok( const json_t *js );
+int			JSON_Line( const json_t *js );
+qboolean	JSON_Fail( json_t *js, const char *message );
+char		JSON_Peek( json_t *js );
+qboolean	JSON_Accept( json_t *js, char c );
+qboolean	JSON_Expect( json_t *js, char c );
+qboolean	JSON_ReadString( json_t *js, char *out, int size );
+qboolean	JSON_ReadScalar( json_t *js, char *out, int size );
+qboolean	JSON_SkipValue( json_t *js );
+
+//
+// g_factory.c
+//
+void		G_InitFactories( void );
+void		Svcmd_ReloadFactories_f( void );
+void		Svcmd_ReloadMapPool_f( void );
+void		Svcmd_StartRandomMap_f( void );
+
+//
 // g_main.c
 //
 void MoveClientToIntermission( gentity_t *ent );

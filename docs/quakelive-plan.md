@@ -33,8 +33,10 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
 - [x] Weapon tuning cvars, with vanilla defaults (`docs/baseql-cvars.md`): reload,
   switch times, damage, splash, projectile speed, knockback, starting weapons
   and ammo. Shared values reach clients in `CS_TUNING`.
-- [ ] Next in phase 0: factories and the map pool. Health, armor and `pmove_*`
-  physics cvars come with their mechanics in phase 1.
+- [x] Factories and the map pool (`docs/baseql-factories.md`), loading QL's own
+  files unchanged. Phase 0 is done; health, armor and `pmove_*` physics cvars
+  come with their mechanics in phase 1.
+- [ ] Next: phase 1.
 
 ## Ground rules
 
@@ -82,10 +84,14 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
   `g_damage_*`, `g_knockback_*`, `g_startingWeapons`, `g_startingHealth`,
   `g_startingArmor`). Send them to clients in a configstring so `bg_*` prediction
   matches the server.
-- **Factories:** gametype presets made of a base gametype plus cvar overrides.
-  Use Q3's own token format (COM_Parse-style braces), because the QVM can't use a
-  JSON library. Add an offline script that converts QL's `factories.txt`.
+- **Factories:** gametype presets made of a base gametype plus cvar overrides,
+  in QL's JSON format so QL's files load unchanged. `qcommon/json.h` can't build
+  as a QVM (it needs `stdio.h`) and doesn't report errors, so baseql has its own
+  small reader (`g_json.c`).
 - **Map pool:** a `mappool.txt` with `map|factory` entries drives map rotation.
+- Still to decide (phase 2): whether baseql's `g_gametype` numbers should match
+  QL's (QL: 0 ffa, 1 duel, 2 race, 3 tdm, 4 ca, 5 ctf, ...), which external
+  tools and server browsers read from serverinfo.
 
 ### 1. Core gameplay
 

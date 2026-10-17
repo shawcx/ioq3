@@ -69,7 +69,9 @@ set(BASEQL_GAME_SOURCES
     ${BASEQL_DIR}/game/g_client.c
     ${BASEQL_DIR}/game/g_cmds.c
     ${BASEQL_DIR}/game/g_combat.c
+    ${BASEQL_DIR}/game/g_factory.c
     ${BASEQL_DIR}/game/g_items.c
+    ${BASEQL_DIR}/game/g_json.c
     ${BASEQL_DIR}/game/g_mem.c
     ${BASEQL_DIR}/game/g_misc.c
     ${BASEQL_DIR}/game/g_missile.c
@@ -143,3 +145,21 @@ if(BUILD_GAME_QVMS)
         OUTPUT_DIRECTORY ${BASEQL}/vm
         SOURCES ${BASEQL_UI_SOURCES} ${BASEQL_DIR}/ui/ui_syscalls.asm)
 endif()
+
+# Data files the game module reads (factories, map pool), copied next to it
+set(BASEQL_DATA_DIR ${BASEQL_DIR}/data)
+file(GLOB_RECURSE BASEQL_DATA_FILES CONFIGURE_DEPENDS RELATIVE ${BASEQL_DATA_DIR} ${BASEQL_DATA_DIR}/*)
+set(BASEQL_DATA_OUTPUTS "")
+foreach(DATA_FILE ${BASEQL_DATA_FILES})
+    set(DATA_OUTPUT ${CMAKE_BINARY_DIR}/$<CONFIG>/${BASEQL}/${DATA_FILE})
+    add_custom_command(
+        OUTPUT ${DATA_OUTPUT}
+        COMMAND ${CMAKE_COMMAND} -E copy ${BASEQL_DATA_DIR}/${DATA_FILE} ${DATA_OUTPUT}
+        DEPENDS ${BASEQL_DATA_DIR}/${DATA_FILE}
+        COMMENT "Copying ${BASEQL}/${DATA_FILE}")
+    list(APPEND BASEQL_DATA_OUTPUTS ${DATA_OUTPUT})
+
+    get_filename_component(DATA_SUBDIR ${DATA_FILE} DIRECTORY)
+    install(FILES ${BASEQL_DATA_DIR}/${DATA_FILE} DESTINATION ${BASEQL}/${DATA_SUBDIR})
+endforeach()
+add_custom_target(baseql_data ALL DEPENDS ${BASEQL_DATA_OUTPUTS})

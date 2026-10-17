@@ -1,0 +1,65 @@
+[
+  {
+    "id": "ffa",
+    "title": "Free For All",
+    "author": "baseql",
+    "description": "Every player for themselves. Most frags when time runs out wins.",
+    "basegt": "ffa",
+    "cvars": {
+      "timelimit": "15"
+    }
+  },
+  {
+    "id": "duel",
+    "title": "Duel",
+    "author": "baseql",
+    "description": "One on one. Everyone else waits in line to play the winner.",
+    "basegt": "duel",
+    "cvars": {
+      "timelimit": "10",
+      "fraglimit": "0"
+    }
+  },
+  {
+    "id": "tdm",
+    "title": "Team Deathmatch",
+    "author": "baseql",
+    "description": "Red against blue. The team with the most frags wins.",
+    "basegt": "tdm",
+    "cvars": {
+      "timelimit": "15",
+      "fraglimit": "150"
+    }
+  },
+  {
+    "id": "ctf",
+    "title": "Capture The Flag",
+    "author": "baseql",
+    "description": "Take the enemy flag back to your own to score.",
+    "basegt": "ctf",
+    "cvars": {
+      "timelimit": "15"
+    }
+  },
+  {
+    "id": "oneflag",
+    "title": "1-Flag CTF",
+    "author": "baseql",
+    "description": "Grab the neutral flag and carry it to the enemy base to score.",
+    "basegt": "oneflag",
+    "cvars": {
+      "timelimit": "15"
+    }
+  },
+  {
+    "id": "har",
+    "title": "Harvester",
+    "author": "baseql",
+    "description": "Collect the skulls of fallen enemies and deliver them to their base.",
+    "basegt": "har",
+    "cvars": {
+      "timelimit": "15",
+      "capturelimit": "30"
+    }
+  }
+]
