@@ -80,6 +80,11 @@ prepare "https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSI
     "" \
     "\./include/.*\.h"
 
+prepare "https://download.savannah.gnu.org/releases/freetype/freetype-${FREETYPE_VERSION}.tar.gz" \
+    "" \
+    "\./\(LICENSE\.TXT\|docs/\(FTL\|GPLv2\)\.TXT\|include/.*\.h\|src/.*\.[ch]\)" \
+    "\./\(include\|src\)/\(bzip2\|cache\|dlg\|gxvalid\|otvalid\|tools\)/.*"
+
 TMPDIR=$(mktemp -d)
 cd ${TMPDIR}
 

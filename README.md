@@ -187,6 +187,7 @@ The following CMake variables may be set, using `-D` on the command line.
   USE_INTERNAL_OGG        - build and link against internal ogg library
   USE_INTERNAL_VORBIS     - build and link against internal Vorbis library
   USE_INTERNAL_OPUS       - build and link against internal opus/opusfile libraries
+  USE_INTERNAL_FREETYPE   - build and link against internal FreeType library
 
   EMSCRIPTEN_PRELOAD_FILE - set to 1 to package 'baseq3' (BASEGAME) directory
                             containing pk3s and loose files as a single
