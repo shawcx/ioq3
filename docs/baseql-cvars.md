@@ -173,6 +173,36 @@ white under 25 damage, then yellow, orange and red from 75. The hit beep uses
 QL's four sounds, from `quakelive.pk3`, in the same steps of 25; without them
 it falls back to Team Arena's. The steps and the colors are baseql's choice.
 
+## Forced enemy models
+
+| Cvar | Default | Meaning |
+|---|---|---|
+| `cg_forceEnemyModel` | empty | client: `model/skin` every enemy is drawn with, for example `keel/bright`; empty draws them as they chose |
+| `cg_forceTeamModel` | empty | client: the same for teammates, in team games |
+| `cg_enemyHeadColor`, `cg_enemyUpperColor`, `cg_enemyLowerColor` | `0x00FF00FF` | client: colors of an enemy's head, torso and legs, `0xRRGGBBAA` or `0xRRGGBB` |
+| `cg_teamHeadColor`, `cg_teamUpperColor`, `cg_teamLowerColor` | `0xFFFFFFFF` | client: the same for teammates |
+
+Outside team games, every other player is an enemy; in team games, a
+spectator forces neither. The colors only show on Quake Live's bright skins
+(`<model>/bright`), which `make-ql-pak.py` packs for the models Quake 3 and
+Team Arena have: anarki, biker, bitterman, bones, crash, doom, grunt, hunter,
+keel, klesk, lucy, major, mynx, orbb, ranger, razor, sarge, slash, sorlag,
+tankjr, uriel, visor, xaero and the Team Arena characters. The default colors
+are baseql's choice.
+
+## End-of-match vote
+
+When a match ends, players vote between three maps from the map pool for the
+next one, with `vote 1` to `vote 3`, as Quake Live's end scoreboard sends, or
+the weapon keys 1 to 3. The vote ends after 15 seconds, or once every player
+has voted or readied up (at least 5 seconds in); the most votes wins and a tie
+is drawn at random. Without two maps to choose from, `nextmap` stays as the map
+pool set it.
+
+| Cvar | Default | Meaning |
+|---|---|---|
+| `sv_includeCurrentMapInVote` | 0 | the map just played can be one of the choices |
+
 ## How shared values reach clients
 
 `weapon_reload_*` and the `pmove_*` cvars affect player movement prediction, so

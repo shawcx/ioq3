@@ -91,6 +91,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define	CS_ITEMS				27		// string of 0's and 1's that tell which items are present
 #define CS_READYUP				28		// baseql: "<players needed> <0 or 1 per client>" while warmup waits for ready-ups
 #define CS_PAUSE				29		// baseql: "<paused at> <resumes at, 0 if not set> <caller, -1 for the server>"
+#define CS_MAPVOTE				30		// baseql: "<vote ends at> <map> <factory> <votes>..." for the end-of-match vote
 
 #define	CS_MODELS				32
 #define	CS_SOUNDS				(CS_MODELS+MAX_MODELS)

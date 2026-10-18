@@ -1694,6 +1694,12 @@ void CG_Weapon_f( void ) {
 	if ( !cg.snap ) {
 		return;
 	}
+
+	// baseql: in the end-of-match vote, the weapon keys pick the next map
+	if ( cg.intermissionStarted && cgs.mapVoteCount ) {
+		CG_MapVote( atoi( CG_Argv( 1 ) ) );
+		return;
+	}
 	if ( cg.snap->ps.pm_flags & PMF_FOLLOW ) {
 		return;
 	}

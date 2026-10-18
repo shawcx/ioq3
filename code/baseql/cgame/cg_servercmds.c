@@ -241,6 +241,54 @@ static void CG_ParsePause( void ) {
 
 /*
 ================
+CG_ParseMapVote
+
+baseql: CS_MAPVOTE, "<vote ends at> <map> <factory> <votes>..." during the
+end-of-match vote, or empty
+================
+*/
+static void CG_ParseMapVote( void ) {
+	char	buf[MAX_STRING_CHARS];
+	char	*p;
+	int		end, i;
+
+	Q_strncpyz( buf, CG_ConfigString( CS_MAPVOTE ), sizeof( buf ) );
+	p = buf;
+	end = atoi( COM_Parse( &p ) );
+	if ( end != cgs.mapVoteEnd ) {
+		cg.mapVote = 0;		// a new vote
+	}
+	cgs.mapVoteEnd = end;
+
+	for ( i = 0 ; i < ARRAY_LEN( cgs.mapVoteMaps ) ; i++ ) {
+		Q_strncpyz( cgs.mapVoteMaps[i], COM_Parse( &p ), sizeof( cgs.mapVoteMaps[i] ) );
+		Q_strncpyz( cgs.mapVoteFactories[i], COM_Parse( &p ), sizeof( cgs.mapVoteFactories[i] ) );
+		cgs.mapVoteVotes[i] = atoi( COM_Parse( &p ) );
+		if ( !cgs.mapVoteMaps[i][0] ) {
+			break;
+		}
+		cgs.mapVoteShots[i] = trap_R_RegisterShaderNoMip( va( "levelshots/%s", cgs.mapVoteMaps[i] ) );
+	}
+	cgs.mapVoteCount = i;
+}
+
+/*
+================
+CG_MapVote
+
+baseql: votes for the next map, 1 to 3
+================
+*/
+void CG_MapVote( int choice ) {
+	if ( choice < 1 || choice > cgs.mapVoteCount ) {
+		return;
+	}
+	cg.mapVote = choice;
+	trap_SendClientCommand( va( "vote %i", choice ) );
+}
+
+/*
+================
 CG_LevelTime
 
 baseql: how long the level has run, which stands still while it's paused
@@ -278,6 +326,7 @@ void CG_SetConfigValues( void ) {
 	cg.warmup = atoi( CG_ConfigString( CS_WARMUP ) );
 	CG_ParseReadyUp();
 	CG_ParsePause();
+	CG_ParseMapVote();
 }
 
 /*
@@ -366,6 +415,8 @@ static void CG_ConfigStringModified( void ) {
 		CG_ParseReadyUp();
 	} else if ( num == CS_PAUSE ) {
 		CG_ParsePause();
+	} else if ( num == CS_MAPVOTE ) {
+		CG_ParseMapVote();
 	} else if ( num == CS_VOTE_TIME ) {
 		cgs.voteTime = atoi( str );
 		cgs.voteModified = qtrue;

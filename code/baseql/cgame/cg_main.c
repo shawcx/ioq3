@@ -30,6 +30,8 @@ displayContextDef_t cgDC;
 #endif
 
 int forceModelModificationCount = -1;
+static int forceEnemyModelModificationCount = -1;	// baseql
+static int forceTeamModelModificationCount = -1;
 
 void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum );
 void CG_Shutdown( void );
@@ -166,6 +168,14 @@ vmCvar_t	cg_hudFiles;
 vmCvar_t 	cg_scorePlum;
 vmCvar_t	cg_hitBeep;
 vmCvar_t	cg_damagePlum;
+vmCvar_t	cg_forceEnemyModel;
+vmCvar_t	cg_forceTeamModel;
+vmCvar_t	cg_enemyHeadColor;
+vmCvar_t	cg_enemyUpperColor;
+vmCvar_t	cg_enemyLowerColor;
+vmCvar_t	cg_teamHeadColor;
+vmCvar_t	cg_teamUpperColor;
+vmCvar_t	cg_teamLowerColor;
 vmCvar_t 	cg_smoothClients;
 vmCvar_t	pmove_fixed;
 //vmCvar_t	cg_pmove_fixed;
@@ -311,6 +321,15 @@ static cvarTable_t cvarTable[] = {
 	// baseql: Quake Live's hit beeps and damage plums
 	{ &cg_hitBeep, "cg_hitBeep", "2", CVAR_ARCHIVE},
 	{ &cg_damagePlum, "cg_damagePlum", "g mg sg gl rl lg rg pg bfg gh ng pl cg hmg", CVAR_ARCHIVE},
+	// baseql: Quake Live's forced models; its bright skins take the colors
+	{ &cg_forceEnemyModel, "cg_forceEnemyModel", "", CVAR_ARCHIVE},
+	{ &cg_forceTeamModel, "cg_forceTeamModel", "", CVAR_ARCHIVE},
+	{ &cg_enemyHeadColor, "cg_enemyHeadColor", "0x00FF00FF", CVAR_ARCHIVE},
+	{ &cg_enemyUpperColor, "cg_enemyUpperColor", "0x00FF00FF", CVAR_ARCHIVE},
+	{ &cg_enemyLowerColor, "cg_enemyLowerColor", "0x00FF00FF", CVAR_ARCHIVE},
+	{ &cg_teamHeadColor, "cg_teamHeadColor", "0xFFFFFFFF", CVAR_ARCHIVE},
+	{ &cg_teamUpperColor, "cg_teamUpperColor", "0xFFFFFFFF", CVAR_ARCHIVE},
+	{ &cg_teamLowerColor, "cg_teamLowerColor", "0xFFFFFFFF", CVAR_ARCHIVE},
 	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_USERINFO | CVAR_ARCHIVE},
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
 
@@ -351,6 +370,8 @@ void CG_RegisterCvars( void ) {
 	cgs.localServer = atoi( var );
 
 	forceModelModificationCount = cg_forceModel.modificationCount;
+	forceEnemyModelModificationCount = cg_forceEnemyModel.modificationCount;
+	forceTeamModelModificationCount = cg_forceTeamModel.modificationCount;
 
 	trap_Cvar_Register(NULL, "model", DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE );
 	trap_Cvar_Register(NULL, "headmodel", DEFAULT_MODEL, CVAR_USERINFO | CVAR_ARCHIVE );
@@ -405,8 +426,12 @@ void CG_UpdateCvars( void ) {
 	}
 
 	// if force model changed
-	if ( forceModelModificationCount != cg_forceModel.modificationCount ) {
+	if ( forceModelModificationCount != cg_forceModel.modificationCount
+			|| forceEnemyModelModificationCount != cg_forceEnemyModel.modificationCount
+			|| forceTeamModelModificationCount != cg_forceTeamModel.modificationCount ) {
 		forceModelModificationCount = cg_forceModel.modificationCount;
+		forceEnemyModelModificationCount = cg_forceEnemyModel.modificationCount;
+		forceTeamModelModificationCount = cg_forceTeamModel.modificationCount;
 		CG_ForceModelChange();
 	}
 }

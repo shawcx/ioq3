@@ -2,7 +2,7 @@
 """Build quakelive.pk3 for baseql from your own copy of Quake Live.
 
 Packs the Heavy Machinegun's and Green Armor's models, sounds and icons, Quake
-Live's HUDs, fonts and hit beeps, and Quake Live's maps with the textures, shaders, models and
+Live's HUDs, fonts, hit beeps and bright player skins, and Quake Live's maps with the textures, shaders, models and
 sounds they use, so baseql can load them. Files that Quake III Arena or Team
 Arena already provide are left out, so Quake 3's own maps keep their look.
 
@@ -151,6 +151,24 @@ def parse_shaders(text):
         else:
             i += 1
     return shaders
+
+
+# general shader keywords in Quake Live's scripts that ioquake3's renderers
+# don't know. They reject a shader with one, which then draws nothing. They're
+# hints for Quake Live's renderer and q3map, so they're left out.
+UNKNOWN_SHADER_KEYWORDS = ("novlcollapse", "cloudparms", "fogonly", "lightning", "q3mapsurfacelight",
+                           "nodefault", "foggen")
+
+
+def strip_unknown_keywords(body):
+    """A shader definition without the general keywords ioquake3 doesn't know."""
+    lines, depth = [], 0
+    for line in body.split("\n"):
+        words = line.split()
+        if not (depth == 1 and words and words[0].lower() in UNKNOWN_SHADER_KEYWORDS):
+            lines.append(line)
+        depth += line.count("{") - line.count("}")
+    return "\n".join(lines)
 
 
 def shader_images(name, body):
@@ -322,7 +340,7 @@ class Collector:
             return
         if key in self.ql_shaders:
             shader_name, body = self.ql_shaders[key]
-            self.shaders[key] = "%s\n%s\n" % (shader_name, body)
+            self.shaders[key] = "%s\n%s\n" % (shader_name, strip_unknown_keywords(body))
             for image in shader_images(shader_name, body):
                 self.add_image(image)
         else:
@@ -371,6 +389,22 @@ class Collector:
         for name in FONT_FILES + FEEDBACK_FILES:
             if not self.add_file(name):
                 self.missing.add(name)
+
+    def add_bright_skins(self):
+        """Quake Live's bright player skins, which cg_forceEnemyModel uses, for
+        the player models Quake 3 and Team Arena have"""
+        for name in sorted(self.ql.names()):
+            found = re.match(r"models/players/([^/]+)/(head|upper|lower|icon)_bright\.(\w+)$", name)
+            if not found or "models/players/%s/upper.md3" % found.group(1) not in self.base:
+                continue
+            if found.group(2) == "icon":
+                self.add_file(name)
+                continue
+            self.add_file(name)
+            for line in self.ql.read(name).decode("latin-1").splitlines():
+                shader = line.partition(",")[2].strip()
+                if shader:
+                    self.add_shader(shader)
 
     def add_items(self):
         for name in sorted(self.ql.names()):
@@ -474,6 +508,7 @@ def main():
     collector = Collector(ql, base, all_shaders(ql), all_shaders(base))
     collector.add_items()
     collector.add_hud()
+    collector.add_bright_skins()
     for name in maps:
         if "maps/%s.bsp" % name in base:
             continue            # Quake 3's own map of the same name wins

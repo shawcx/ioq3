@@ -56,6 +56,9 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
 - [x] Phase 3, first part: ready-up (`sv_warmupReadyPercentage`, `readyup`),
   timeouts (`timeout`, `timein`) and server pauses.
 - [x] Phase 4 feedback: damage plums and hit beeps pitched by damage.
+- [x] Forced enemy and team models with Quake Live's bright skins and per-part
+  colors; the end-of-match vote between three pool maps; Quake 3's scoreboard
+  where the HUD files have none.
 - [ ] Next in phase 1: the rest of movement (PQL air control, step/ramp/chain
   jumps, crouch slide) and armor, once their rules can be checked against a
   source; spawn selection.
@@ -73,12 +76,14 @@ on a private server: no bots and no other gametypes. Done for that:
 - Quake Live's HUDs (standard, minimal, competitive) in Quake Live's fonts.
 - Lag compensation for hitscan weapons, ready-up, timeouts and pauses, damage
   plums and hit beeps pitched by damage.
+- Forced enemy models with bright skins, the end-of-match map vote, and a
+  scoreboard.
 - `baseql.pk3` packaging, and a setup guide (`docs/baseql-duel.md`).
 - Tested end to end: two clients on a pure server, warmup, match, time limit,
   and the next map from the pool.
 
-Next for duels, by value: forced enemy models and bright skins, the
-end-of-match map vote (`docs/baseql-roadmap.md` has the full list).
+Next for duels: measuring Quake Live's step and chain jumps and its armor
+values, which need a source (`docs/baseql-roadmap.md` has the full list).
 
 ## Ground rules
 

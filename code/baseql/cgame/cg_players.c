@@ -314,6 +314,15 @@ static qboolean	CG_FindClientModelFile( char *filename, int length, clientInfo_t
 	char *team, *charactersFolder;
 	int i;
 
+	// baseql: a forced model's skin, such as Quake Live's bright one, is used
+	// as is, without team variants
+	if ( ci->forced ) {
+		Com_sprintf( filename, length, "models/players/%s/%s_%s.%s", modelName, base, skinName, ext );
+		if ( CG_FileExists( filename ) ) {
+			return qtrue;
+		}
+	}
+
 	if ( cgs.gametype >= GT_TEAM ) {
 		switch ( ci->team ) {
 			case TEAM_BLUE: {
@@ -605,8 +614,13 @@ static qboolean CG_RegisterClientModelname( clientInfo_t *ci, const char *modelN
 	else if ( CG_FindClientHeadFile( filename, sizeof(filename), ci, teamName, headName, headSkinName, "icon", "tga" ) ) {
 		ci->modelIcon = trap_R_RegisterShaderNoMip( filename );
 	}
+	// baseql: Quake Live's icons, such as its bright skins', are PNGs
+	else if ( CG_FindClientHeadFile( filename, sizeof(filename), ci, teamName, headName, headSkinName, "icon", "png" ) ) {
+		ci->modelIcon = trap_R_RegisterShaderNoMip( filename );
+	}
 
 	if ( !ci->modelIcon ) {
+		Com_Printf( "Failed to load icon file for %s/%s\n", headName, headSkinName );
 		return qfalse;
 	}
 
@@ -870,6 +884,111 @@ static void CG_SetDeferredClientInfo( int clientNum, clientInfo_t *ci ) {
 
 /*
 ======================
+CG_ForcedModelSide
+
+baseql: whether cg_forceEnemyModel or cg_forceTeamModel applies to a player.
+Outside team games everyone else is an enemy; in team games, spectators
+force neither.
+======================
+*/
+static forcedModel_t CG_ForcedModelSide( int clientNum, int team ) {
+	int		localTeam;
+
+	if ( clientNum == cg.clientNum || team == TEAM_SPECTATOR ) {
+		return FORCED_NONE;
+	}
+	if ( cgs.gametype < GT_TEAM ) {
+		return cg_forceEnemyModel.string[0] ? FORCED_ENEMY : FORCED_NONE;
+	}
+
+	// the local player's info may not have been parsed yet
+	localTeam = atoi( Info_ValueForKey( CG_ConfigString( CS_PLAYERS + cg.clientNum ), "t" ) );
+	if ( localTeam != TEAM_RED && localTeam != TEAM_BLUE ) {
+		return FORCED_NONE;
+	}
+	if ( team == localTeam ) {
+		return cg_forceTeamModel.string[0] ? FORCED_TEAM : FORCED_NONE;
+	}
+	return cg_forceEnemyModel.string[0] ? FORCED_ENEMY : FORCED_NONE;
+}
+
+/*
+======================
+CG_ForceModel
+
+baseql: gives a player a forced "model/skin", head included
+======================
+*/
+static void CG_ForceModel( clientInfo_t *ci, const char *model ) {
+	char	*slash;
+
+	Q_strncpyz( ci->modelName, model, sizeof( ci->modelName ) );
+	slash = strchr( ci->modelName, '/' );
+	if ( slash ) {
+		*slash = 0;
+		Q_strncpyz( ci->skinName, slash + 1, sizeof( ci->skinName ) );
+	} else {
+		Q_strncpyz( ci->skinName, "default", sizeof( ci->skinName ) );
+	}
+	Q_strncpyz( ci->headModelName, ci->modelName, sizeof( ci->headModelName ) );
+	Q_strncpyz( ci->headSkinName, ci->skinName, sizeof( ci->headSkinName ) );
+}
+
+/*
+======================
+CG_ForcedModelColor
+
+baseql: a forced model's color for a body part, from a cvar such as
+cg_enemyUpperColor, "0xRRGGBBAA" or "0xRRGGBB"; other players draw white.
+Quake Live's bright skins take it with rgbGen entity.
+======================
+*/
+static void CG_ForcedModelColor( clientInfo_t *ci, vmCvar_t *enemy, vmCvar_t *team, byte *rgba ) {
+	const char	*s;
+	unsigned	value;
+	int			digits, c;
+
+	rgba[0] = rgba[1] = rgba[2] = rgba[3] = 255;
+	if ( ci->forced == FORCED_ENEMY ) {
+		s = enemy->string;
+	} else if ( ci->forced == FORCED_TEAM ) {
+		s = team->string;
+	} else {
+		return;
+	}
+
+	if ( s[0] == '0' && ( s[1] == 'x' || s[1] == 'X' ) ) {
+		s += 2;
+	} else if ( s[0] == '#' ) {
+		s++;
+	}
+	value = 0;
+	for ( digits = 0 ; s[digits] ; digits++ ) {
+		c = s[digits];
+		if ( c >= '0' && c <= '9' ) {
+			c -= '0';
+		} else if ( c >= 'a' && c <= 'f' ) {
+			c -= 'a' - 10;
+		} else if ( c >= 'A' && c <= 'F' ) {
+			c -= 'A' - 10;
+		} else {
+			return;
+		}
+		value = ( value << 4 ) | c;
+	}
+	if ( digits == 6 ) {
+		value = ( value << 8 ) | 0xff;
+	} else if ( digits != 8 ) {
+		return;
+	}
+	rgba[0] = ( value >> 24 ) & 0xff;
+	rgba[1] = ( value >> 16 ) & 0xff;
+	rgba[2] = ( value >> 8 ) & 0xff;
+	rgba[3] = value & 0xff;
+}
+
+/*
+======================
 CG_NewClientInfo
 ======================
 */
@@ -879,6 +998,8 @@ void CG_NewClientInfo( int clientNum ) {
 	const char	*configstring;
 	const char	*v;
 	char		*slash;
+	team_t		oldTeam;
+	int			i;
 
 	ci = &cgs.clientinfo[clientNum];
 
@@ -1035,6 +1156,14 @@ void CG_NewClientInfo( int clientNum ) {
 		}
 	}
 
+	// baseql: Quake Live's forced enemy and team models
+	newInfo.forced = CG_ForcedModelSide( clientNum, newInfo.team );
+	if ( newInfo.forced == FORCED_ENEMY ) {
+		CG_ForceModel( &newInfo, cg_forceEnemyModel.string );
+	} else if ( newInfo.forced == FORCED_TEAM ) {
+		CG_ForceModel( &newInfo, cg_forceTeamModel.string );
+	}
+
 	// scan for an existing clientinfo that matches this modelname
 	// so we can avoid loading checks if possible
 	if ( !CG_ScanForExistingClientInfo( &newInfo ) ) {
@@ -1042,8 +1171,9 @@ void CG_NewClientInfo( int clientNum ) {
 
 		forceDefer = trap_MemoryRemaining() < 4000000;
 
-		// if we are defering loads, just have it pick the first valid
-		if ( forceDefer || (cg_deferPlayers.integer && !cg_buildScript.integer && !cg.loading ) ) {
+		// if we are defering loads, just have it pick the first valid; baseql:
+		// but load a forced model now, which all its players share
+		if ( forceDefer || (cg_deferPlayers.integer && !cg_buildScript.integer && !cg.loading && !newInfo.forced ) ) {
 			// keep whatever they had if it won't violate team skins
 			CG_SetDeferredClientInfo( clientNum, &newInfo );
 			// if we are low on memory, leave them with this model
@@ -1058,7 +1188,17 @@ void CG_NewClientInfo( int clientNum ) {
 
 	// replace whatever was there with the new one
 	newInfo.infoValid = qtrue;
+	oldTeam = ci->team;
 	*ci = newInfo;
+
+	// baseql: who is an enemy changes with the local player's team
+	if ( clientNum == cg.clientNum && cgs.gametype >= GT_TEAM && newInfo.team != oldTeam ) {
+		for ( i = 0 ; i < MAX_CLIENTS ; i++ ) {
+			if ( i != clientNum && CG_ConfigString( CS_PLAYERS + i )[0] ) {
+				CG_NewClientInfo( i );
+			}
+		}
+	}
 }
 
 
@@ -2318,6 +2458,7 @@ void CG_Player( centity_t *cent ) {
 	//
 	legs.hModel = ci->legsModel;
 	legs.customSkin = ci->legsSkin;
+	CG_ForcedModelColor( ci, &cg_enemyLowerColor, &cg_teamLowerColor, legs.shaderRGBA );
 
 	VectorCopy( cent->lerpOrigin, legs.origin );
 
@@ -2342,6 +2483,7 @@ void CG_Player( centity_t *cent ) {
 	}
 
 	torso.customSkin = ci->torsoSkin;
+	CG_ForcedModelColor( ci, &cg_enemyUpperColor, &cg_teamUpperColor, torso.shaderRGBA );
 
 	VectorCopy( cent->lerpOrigin, torso.lightingOrigin );
 
@@ -2568,6 +2710,7 @@ void CG_Player( centity_t *cent ) {
 		return;
 	}
 	head.customSkin = ci->headSkin;
+	CG_ForcedModelColor( ci, &cg_enemyHeadColor, &cg_teamHeadColor, head.shaderRGBA );
 
 	VectorCopy( cent->lerpOrigin, head.lightingOrigin );
 

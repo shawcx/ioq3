@@ -50,9 +50,12 @@ console, `seta snaps 40` gets a snapshot every server frame, then
 
 Once both players are in, each types `readyup` in the console; a 10 second
 countdown starts when both have. A duel runs 10 minutes; a tie at the end goes
-to sudden death. At the scoreboard, press fire (or type `readyup`): the next
-map, picked at random from Quake Live's duel maps, loads when both players have
-or 10 seconds after the first did.
+to sudden death. At the scoreboard, vote for the next map from three of Quake
+Live's duel maps with the weapon keys 1 to 3; it loads when both players have
+voted or after 15 seconds.
+
+`seta cg_forceEnemyModel keel/bright` draws your opponent as Quake Live's
+bright green Keel; `cg_enemyUpperColor` and the like set the colors.
 
 Each player has 3 timeouts a match: `timeout` pauses the game for a minute,
 and `timein` ends your timeout early. Play resumes after a 3 second countdown.

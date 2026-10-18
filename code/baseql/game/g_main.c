@@ -93,6 +93,7 @@ vmCvar_t	g_timeoutCount;
 vmCvar_t	g_timeoutLen;
 vmCvar_t	g_damagePlums;
 vmCvar_t	bot_autoReady;
+vmCvar_t	sv_includeCurrentMapInVote;
 vmCvar_t	g_debugAlloc;
 vmCvar_t	g_weaponRespawn;
 vmCvar_t	g_motd;
@@ -217,6 +218,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_timeoutLen, "g_timeoutLen", "60", 0, 0, qfalse },
 	{ &g_damagePlums, "g_damagePlums", "2", 0, 0, qfalse },
 	{ &bot_autoReady, "bot_autoReady", "1", 0, 0, qfalse },
+	{ &sv_includeCurrentMapInVote, "sv_includeCurrentMapInVote", "0", 0, 0, qfalse },
 	{ &g_debugAlloc, "g_debugAlloc", "0", 0, 0, qfalse },
 	{ &g_motd, "g_motd", "", 0, 0, qfalse },
 	{ &g_blood, "com_blood", "1", 0, 0, qfalse },
@@ -589,6 +591,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	// baseql: they outlive a map_restart
 	trap_SetConfigstring( CS_READYUP, "" );
 	trap_SetConfigstring( CS_PAUSE, "" );
+	trap_SetConfigstring( CS_MAPVOTE, "" );
 }
 
 
@@ -1108,6 +1111,9 @@ void BeginIntermission( void ) {
 	// send the current scoring to all clients
 	SendScoreboardMessageToAllClients();
 
+	// baseql: players vote for the next map
+	G_StartMapVote();
+
 }
 
 
@@ -1346,6 +1352,15 @@ void CheckIntermissionExit( void ) {
 			continue;
 		}
 		cl->ps.stats[STAT_CLIENTS_READY] = readyMask;
+	}
+
+	// baseql: an end-of-match map vote decides when to go, and where
+	if ( level.mapVoteEnd ) {
+		if ( G_MapVoteOver() ) {
+			G_EndMapVote();
+			ExitLevel();
+		}
+		return;
 	}
 
 	// never exit in less than five seconds

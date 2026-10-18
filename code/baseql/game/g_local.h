@@ -248,7 +248,16 @@ typedef struct {
 	qboolean	teamInfo;			// send team overlay updates?
 	qboolean	ready;				// baseql: readied up for the match during warmup
 	int			timeouts;			// baseql: timeouts called this match
+	int			mapVote;			// baseql: end-of-match vote, 1 for the first map, 0 for none
 } clientPersistant_t;
+
+// baseql: a map pool entry, see g_factory.c
+typedef struct {
+	char		map[MAX_QPATH];
+	char		factory[MAX_QPATH];
+} mapPoolEntry_t;
+
+#define MAX_MAPVOTE_CHOICES		3
 
 // baseql: where a player was at the end of a server frame, for lag compensation
 #define	MAX_LAGCOMP_FRAMES		32
@@ -431,6 +440,9 @@ typedef struct {
 	int			pauseEnd;				// level.time it resumes, 0 when not yet set
 	int			pauseClient;			// who called the timeout, -1 for the server
 	int			teamTimeouts[TEAM_NUM_TEAMS];	// timeouts each team called, in team games
+	int			mapVoteEnd;				// level.time the end-of-match vote ends, 0 when there's none
+	int			mapVoteCount;			// maps to vote for
+	mapPoolEntry_t	mapVoteChoices[MAX_MAPVOTE_CHOICES];
 
 	qboolean	locationLinked;			// target_locations get linked
 	gentity_t	*locationHead;			// head of the location list
@@ -627,6 +639,10 @@ void Cmd_Timein_f( gentity_t *ent );
 void Svcmd_Pause_f( void );
 void Svcmd_Unpause_f( void );
 void Svcmd_AllReady_f( void );
+void G_StartMapVote( void );
+qboolean G_MapVoteOver( void );
+void G_EndMapVote( void );
+void Cmd_MapVote_f( gentity_t *ent );
 
 //
 // g_svcmds.c
@@ -698,6 +714,8 @@ void		G_InitFactories( void );
 void		Svcmd_ReloadFactories_f( void );
 void		Svcmd_ReloadMapPool_f( void );
 void		Svcmd_StartRandomMap_f( void );
+int			G_PickMapPoolEntries( mapPoolEntry_t *out, int max );
+const char	*G_MapPoolCommand( const mapPoolEntry_t *e );
 
 //
 // g_main.c
@@ -856,6 +874,7 @@ extern	vmCvar_t	g_timeoutCount;
 extern	vmCvar_t	g_timeoutLen;
 extern	vmCvar_t	g_damagePlums;
 extern	vmCvar_t	bot_autoReady;
+extern	vmCvar_t	sv_includeCurrentMapInVote;
 extern	vmCvar_t	g_weaponRespawn;
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;

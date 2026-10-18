@@ -1777,6 +1777,11 @@ void ClientCommand( int clientNum ) {
 		Cmd_ReadyUp_f (ent);
 		return;
 	}
+	// baseql: "vote <1-3>" picks the next map at the end of a match
+	if (level.mapVoteEnd && Q_stricmp (cmd, "vote") == 0) {
+		Cmd_MapVote_f (ent);
+		return;
+	}
 
 	// ignore all other commands when at intermission
 	if (level.intermissiontime) {

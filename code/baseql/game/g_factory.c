@@ -47,11 +47,6 @@ typedef struct {
 	int			numCvars;
 } factory_t;
 
-typedef struct {
-	char		map[MAX_QPATH];
-	char		factory[MAX_QPATH];
-} mapPoolEntry_t;
-
 static factory_t		factories[MAX_FACTORIES];
 static int				numFactories;
 static char				factoryPool[FACTORY_POOL_SIZE];
@@ -584,6 +579,61 @@ void G_InitFactories( void ) {
 
 	// classic nextmap rotation scripts set nextmap after this, and still win
 	G_SetNextMapFromPool();
+}
+
+/*
+================
+G_MapPoolCommand
+
+baseql: the command that changes to a map pool entry, NULL if its factory
+isn't known
+================
+*/
+const char *G_MapPoolCommand( const mapPoolEntry_t *e ) {
+	if ( !numFactories ) {
+		G_LoadFactories();
+	}
+	return G_MapChangeCommand( e );
+}
+
+/*
+================
+G_PickMapPoolEntries
+
+baseql: up to max different map pool entries at random, for the end-of-match
+vote; the current map is left out unless sv_includeCurrentMapInVote is set.
+A map_restart restarts the game module, so the pool may need reading again.
+================
+*/
+int G_PickMapPoolEntries( mapPoolEntry_t *out, int max ) {
+	char	map[MAX_QPATH];
+	int		candidates[MAX_MAPPOOL];
+	int		i, n, count;
+
+	if ( !numFactories ) {
+		G_LoadFactories();
+	}
+	if ( !mapPoolSize ) {
+		G_LoadMapPool();
+	}
+
+	trap_Cvar_VariableStringBuffer( "mapname", map, sizeof( map ) );
+	n = 0;
+	for ( i = 0 ; i < mapPoolSize ; i++ ) {
+		if ( !sv_includeCurrentMapInVote.integer && !Q_stricmp( mapPool[i].map, map ) ) {
+			continue;
+		}
+		if ( G_FindFactory( mapPool[i].factory ) ) {
+			candidates[n++] = i;
+		}
+	}
+
+	for ( count = 0 ; count < max && n > 0 ; count++ ) {
+		i = rand() % n;
+		out[count] = mapPool[candidates[i]];
+		candidates[i] = candidates[--n];
+	}
+	return count;
 }
 
 /*

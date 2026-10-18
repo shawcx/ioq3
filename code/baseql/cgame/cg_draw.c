@@ -2196,6 +2196,10 @@ static qboolean CG_DrawScoreboard( void ) {
 			firstTime = qfalse;
 		}
 		Menu_Paint(menuScoreboard, qtrue);
+	} else {
+		// baseql: Quake Live's HUD files have no scoreboard menus, so use
+		// Quake 3's scoreboard
+		CG_DrawOldScoreboard();
 	}
 
 	// load any models that have been deferred
@@ -2214,6 +2218,8 @@ static qboolean CG_DrawScoreboard( void ) {
 CG_DrawIntermission
 =================
 */
+static void CG_DrawMapVote( void );
+
 static void CG_DrawIntermission( void ) {
 //	int key;
 #ifdef MISSIONPACK
@@ -2229,6 +2235,7 @@ static void CG_DrawIntermission( void ) {
 #endif
 	cg.scoreFadeTime = cg.time;
 	cg.scoreBoardShowing = CG_DrawScoreboard();
+	CG_DrawMapVote();
 }
 
 /*
@@ -2408,6 +2415,43 @@ static void CG_DrawPause( void ) {
 		} else if ( sec == 1 ) {
 			trap_S_StartLocalSound( cgs.media.count1Sound, CHAN_ANNOUNCER );
 		}
+	}
+}
+
+/*
+=================
+CG_DrawMapVote
+
+baseql: the end-of-match vote between maps from the map pool, with their
+levelshots and votes so far
+=================
+*/
+static void CG_DrawMapVote( void ) {
+	static vec4_t	cardColor = { 0, 0, 0, 0.6f };
+	static vec4_t	votedColor = { 1, 0.8f, 0, 0.8f };
+	int				i, x, x0, msec;
+
+	if ( !cgs.mapVoteCount ) {
+		return;
+	}
+
+	msec = cgs.mapVoteEnd - cg.time;
+	CG_DrawCenteredText( 314, 0.3f, va( "Vote for the next map: press 1 to %i (%i)",
+		cgs.mapVoteCount, msec > 0 ? ( msec + 999 ) / 1000 : 0 ) );
+
+	x0 = 320 - ( cgs.mapVoteCount * 160 - 10 ) / 2;
+	for ( i = 0 ; i < cgs.mapVoteCount ; i++ ) {
+		x = x0 + i * 160;
+		if ( cg.mapVote == i + 1 ) {
+			CG_FillRect( x - 3, 319, 156, 140, votedColor );
+		}
+		CG_FillRect( x, 322, 150, 134, cardColor );
+		if ( cgs.mapVoteShots[i] ) {
+			CG_DrawPic( x + 11, 325, 128, 96, cgs.mapVoteShots[i] );
+		}
+		CG_Text_Paint( x + 6, 437, 0.25f, colorWhite, va( "%i. %s", i + 1, cgs.mapVoteMaps[i] ), 0, 0, ITEM_TEXTSTYLE_SHADOWED );
+		CG_Text_Paint( x + 6, 451, 0.2f, colorLtGrey, va( "%s, %i vote%s", cgs.mapVoteFactories[i],
+			cgs.mapVoteVotes[i], cgs.mapVoteVotes[i] == 1 ? "" : "s" ), 0, 0, ITEM_TEXTSTYLE_SHADOWED );
 	}
 }
 

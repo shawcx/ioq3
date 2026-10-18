@@ -2,7 +2,7 @@
 
 `code/baseql/tools/make-ql-pak.py` builds `quakelive.pk3` from your own copy of
 Quake Live: the Heavy Machinegun's model, sounds and icons, Quake Live's HUD,
-fonts and hit beeps, and Quake Live's 149 maps with the textures, shaders, models and sounds they
+fonts, hit beeps and bright player skins, and Quake Live's 149 maps with the textures, shaders, models and sounds they
 use. It needs your
 own copies of Quake III Arena and Team Arena (baseql's menus use Team Arena's
 data) and Quake Live.
@@ -50,6 +50,9 @@ needs the same pk3; the same Quake Live data gives the same files.
   built with `-DUSE_FREETYPE=ON`.
 - Quake Live's hit beeps, `sound/feedback/hit0.ogg` to `hit3.ogg`, pitched
   lower for more damage (`cg_hitBeep 2`).
+- Quake Live's bright player skins (`head_bright.skin` and the like, their
+  shaders, images and icons) for the player models Quake 3 and Team Arena
+  have, for `cg_forceEnemyModel`.
 
 Files Quake 3 or Team Arena already have are left out, and so are Quake Live
 shader definitions for names Quake 3's maps use as plain images, so Quake 3's
@@ -63,8 +66,12 @@ ioquake3's renderers refuse, have those surfaces split. The HMG's model is one.
 
 - Quake Live maps need baseql's engine, which loads their BSP version (47).
 - A few dozen referenced files exist in neither game, mostly editor textures;
-  the script lists them. The engine warns about a few Quake Live shader
-  keywords it doesn't know.
+  the script lists them.
+- Quake Live's shaders use keywords ioquake3's renderers don't know
+  (`novlcollapse` in 648 of them, and `cloudparms`, `fogonly`, `lightning`,
+  `q3mapsurfacelight`, `nodefault`, `foggen`). The renderers reject such a
+  shader, which then draws nothing, so the script leaves those keywords out;
+  they're hints for Quake Live's renderer and q3map.
 - An engine built without FreeType draws the HUD in Team Arena's font, at
   the nearest size it has. HUD parts for gametypes baseql doesn't have yet
   (rounds, Domination, race) draw nothing.

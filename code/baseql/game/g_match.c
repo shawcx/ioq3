@@ -21,12 +21,15 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 //
 // g_match.c -- baseql: match flow as in Quake Live: readying up in warmup,
-// timeouts and pauses
+// timeouts and pauses, and the vote for the next map
 
 #include "g_local.h"
 
 // the countdown before a paused game goes on
 #define PAUSE_RESUME_MSEC	3000
+
+// how long the end-of-match vote for the next map lasts
+#define MAPVOTE_MSEC		15000
 
 /*
 ================
@@ -423,4 +426,154 @@ void Svcmd_AllReady_f( void ) {
 		}
 	}
 	trap_SendServerCommand( -1, "print \"The server readied everyone up.\n\"" );
+}
+
+/*
+================
+G_UpdateMapVote
+
+Counts the end-of-match votes into CS_MAPVOTE
+================
+*/
+static void G_UpdateMapVote( int *votes ) {
+	char		s[MAX_STRING_CHARS];
+	int			i, choice;
+	gclient_t	*cl;
+
+	for ( i = 0 ; i < level.mapVoteCount ; i++ ) {
+		votes[i] = 0;
+	}
+	for ( i = 0 ; i < level.maxclients ; i++ ) {
+		cl = &level.clients[i];
+		choice = cl->pers.mapVote;
+		if ( cl->pers.connected == CON_CONNECTED && choice >= 1 && choice <= level.mapVoteCount ) {
+			votes[choice - 1]++;
+		}
+	}
+
+	Com_sprintf( s, sizeof( s ), "%i", level.mapVoteEnd );
+	for ( i = 0 ; i < level.mapVoteCount ; i++ ) {
+		Q_strcat( s, sizeof( s ), va( " %s %s %i", level.mapVoteChoices[i].map,
+			level.mapVoteChoices[i].factory, votes[i] ) );
+	}
+	trap_SetConfigstring( CS_MAPVOTE, s );
+}
+
+/*
+================
+G_StartMapVote
+
+At the end of a match, as in Quake Live, players vote between three maps from
+the map pool for the next one. Without two maps to choose from, nextmap stays.
+================
+*/
+void G_StartMapVote( void ) {
+	int		votes[MAX_MAPVOTE_CHOICES];
+
+	if ( g_gametype.integer == GT_SINGLE_PLAYER ) {
+		return;
+	}
+
+	level.mapVoteCount = G_PickMapPoolEntries( level.mapVoteChoices, MAX_MAPVOTE_CHOICES );
+	if ( level.mapVoteCount < 2 ) {
+		level.mapVoteCount = 0;
+		return;
+	}
+
+	level.mapVoteEnd = level.time + MAPVOTE_MSEC;
+	G_UpdateMapVote( votes );
+}
+
+/*
+================
+Cmd_MapVote_f
+
+vote <1-3> during the end-of-match vote, as Quake Live's end scoreboard sends
+================
+*/
+void Cmd_MapVote_f( gentity_t *ent ) {
+	char	arg[MAX_TOKEN_CHARS];
+	int		choice, votes[MAX_MAPVOTE_CHOICES];
+
+	trap_Argv( 1, arg, sizeof( arg ) );
+	choice = atoi( arg );
+	if ( choice < 1 || choice > level.mapVoteCount ) {
+		trap_SendServerCommand( ent - g_entities, va( "print \"Vote for the next map with vote 1 to vote %i.\n\"",
+			level.mapVoteCount ) );
+		return;
+	}
+
+	ent->client->pers.mapVote = choice;
+	G_UpdateMapVote( votes );
+}
+
+/*
+================
+G_MapVoteOver
+
+The vote ends when its time is up, or once every player has voted or readied
+up, after at least the five seconds an intermission always lasts
+================
+*/
+qboolean G_MapVoteOver( void ) {
+	int			i;
+	gclient_t	*cl;
+
+	if ( level.time >= level.mapVoteEnd ) {
+		return qtrue;
+	}
+	if ( level.time < level.intermissiontime + 5000 ) {
+		return qfalse;
+	}
+
+	for ( i = 0 ; i < level.maxclients ; i++ ) {
+		cl = &level.clients[i];
+		if ( cl->pers.connected != CON_CONNECTED || ( g_entities[i].r.svFlags & SVF_BOT ) ) {
+			continue;
+		}
+		if ( !cl->pers.mapVote && !cl->readyToExit ) {
+			return qfalse;
+		}
+	}
+	return qtrue;
+}
+
+/*
+================
+G_EndMapVote
+
+The map with the most votes is next; a tie goes to one of the tied at random
+================
+*/
+void G_EndMapVote( void ) {
+	int			votes[MAX_MAPVOTE_CHOICES];
+	int			i, best, tied, winner;
+	const char	*cmd;
+
+	G_UpdateMapVote( votes );
+
+	best = 0;
+	for ( i = 1 ; i < level.mapVoteCount ; i++ ) {
+		if ( votes[i] > votes[best] ) {
+			best = i;
+		}
+	}
+	tied = 0;
+	winner = best;
+	for ( i = 0 ; i < level.mapVoteCount ; i++ ) {
+		if ( votes[i] == votes[best] && rand() % ++tied == 0 ) {
+			winner = i;
+		}
+	}
+
+	cmd = G_MapPoolCommand( &level.mapVoteChoices[winner] );
+	if ( cmd ) {
+		trap_Cvar_Set( "nextmap", cmd );
+	}
+	trap_SendServerCommand( -1, va( "print \"Next map: %s (%s), %i of %i votes.\n\"",
+		level.mapVoteChoices[winner].map, level.mapVoteChoices[winner].factory, votes[winner],
+		votes[0] + votes[1] + ( level.mapVoteCount > 2 ? votes[2] : 0 ) ) );
+	G_LogPrintf( "MapVote: %s %s %i\n", level.mapVoteChoices[winner].map,
+		level.mapVoteChoices[winner].factory, votes[winner] );
+	level.mapVoteEnd = 0;
 }

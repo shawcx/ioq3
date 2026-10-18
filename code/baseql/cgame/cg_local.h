@@ -306,11 +306,19 @@ typedef struct {
 // usually as a result of a userinfo (name, model, etc) change
 #define	MAX_CUSTOM_SOUNDS	32
 
+// baseql: whose model cg_forceEnemyModel or cg_forceTeamModel replaces
+typedef enum {
+	FORCED_NONE,
+	FORCED_ENEMY,
+	FORCED_TEAM
+} forcedModel_t;
+
 typedef struct {
 	qboolean		infoValid;
 
 	char			name[MAX_QPATH];
 	team_t			team;
+	forcedModel_t	forced;			// baseql
 
 	int				botSkill;		// 0 = not bot, 1-5 = bot
 
@@ -599,6 +607,7 @@ typedef struct {
 	int			warmup;
 	int			warmupCount;
 	int			pauseCount;			// baseql: the resume countdown's last second announced
+	int			mapVote;			// baseql: the map this player voted for, 1 to 3, 0 for none
 
 	//==========================
 
@@ -1038,6 +1047,14 @@ typedef struct {
 	int				pauseEnd;				// server time it resumes, 0 when not yet set
 	int				pauseClient;			// who called the timeout, -1 for the server
 
+	// baseql: from CS_MAPVOTE
+	int				mapVoteEnd;				// server time the end-of-match vote ends
+	int				mapVoteCount;			// maps to vote for, 0 when there's no vote
+	char			mapVoteMaps[3][MAX_QPATH];
+	char			mapVoteFactories[3][MAX_QPATH];
+	int				mapVoteVotes[3];
+	qhandle_t		mapVoteShots[3];		// levelshots
+
 	int				scores1, scores2;		// from configstrings
 	int				redflag, blueflag;		// flag status from configstrings
 	int				flagStatus;
@@ -1170,6 +1187,14 @@ extern	vmCvar_t		cg_noVoiceText;
 extern  vmCvar_t		cg_scorePlum;
 extern  vmCvar_t		cg_hitBeep;
 extern  vmCvar_t		cg_damagePlum;
+extern  vmCvar_t		cg_forceEnemyModel;
+extern  vmCvar_t		cg_forceTeamModel;
+extern  vmCvar_t		cg_enemyHeadColor;
+extern  vmCvar_t		cg_enemyUpperColor;
+extern  vmCvar_t		cg_enemyLowerColor;
+extern  vmCvar_t		cg_teamHeadColor;
+extern  vmCvar_t		cg_teamUpperColor;
+extern  vmCvar_t		cg_teamLowerColor;
 extern	vmCvar_t		cg_smoothClients;
 extern	vmCvar_t		pmove_fixed;
 extern	vmCvar_t		pmove_msec;
@@ -1475,6 +1500,7 @@ void CG_ParseServerinfo( void );
 void CG_SetConfigValues( void );
 void CG_ShaderStateChanged(void);
 int CG_LevelTime( void );
+void CG_MapVote( int choice );
 #ifdef MISSIONPACK
 void CG_LoadVoiceChats( void );
 void CG_VoiceChatLocal( int mode, qboolean voiceOnly, int clientNum, int color, const char *cmd );

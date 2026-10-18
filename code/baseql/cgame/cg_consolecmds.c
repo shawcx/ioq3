@@ -445,6 +445,24 @@ static void CG_Camera_f( void ) {
 */
 
 
+/*
+==================
+CG_Vote_f
+
+baseql: forwards vote to the server, remembering an end-of-match vote so
+it shows
+==================
+*/
+static void CG_Vote_f( void ) {
+	int		choice;
+
+	choice = atoi( CG_Argv( 1 ) );
+	if ( cgs.mapVoteCount && choice >= 1 && choice <= cgs.mapVoteCount ) {
+		cg.mapVote = choice;
+	}
+	trap_SendClientCommand( va( "vote %s", CG_Argv( 1 ) ) );
+}
+
 typedef struct {
 	char	*cmd;
 	void	(*function)(void);
@@ -467,6 +485,7 @@ static consoleCommand_t	commands[] = {
 	{ "weapnext", CG_NextWeapon_f },
 	{ "weapprev", CG_PrevWeapon_f },
 	{ "weapon", CG_Weapon_f },
+	{ "vote", CG_Vote_f },
 	{ "tcmd", CG_TargetCommand_f },
 	{ "tell_target", CG_TellTarget_f },
 	{ "tell_attacker", CG_TellAttacker_f },
