@@ -795,6 +795,8 @@ FireWeapon
 ===============
 */
 void FireWeapon( gentity_t *ent ) {
+	qboolean	hitscan;
+
 	if (ent->client->ps.powerups[PW_QUAD] ) {
 		s_quadFactor = g_quadDamageFactor.value;
 	} else {
@@ -823,6 +825,16 @@ void FireWeapon( gentity_t *ent ) {
 	AngleVectors (ent->client->ps.viewangles, forward, right, up);
 
 	CalcMuzzlePointOrigin ( ent, ent->client->oldOrigin, forward, right, up, muzzle );
+
+	// baseql: hitscan weapons hit the others where the shooter saw them
+	hitscan = ent->s.weapon == WP_LIGHTNING || ent->s.weapon == WP_SHOTGUN
+		|| ent->s.weapon == WP_MACHINEGUN || ent->s.weapon == WP_HMG || ent->s.weapon == WP_RAILGUN;
+#ifdef MISSIONPACK
+	hitscan = hitscan || ent->s.weapon == WP_CHAINGUN;
+#endif
+	if ( hitscan ) {
+		G_RewindClients( ent );
+	}
 
 	// fire the specific weapon
 	switch( ent->s.weapon ) {
@@ -874,6 +886,10 @@ void FireWeapon( gentity_t *ent ) {
 	default:
 // FIXME		G_Error( "Bad ent->s.weapon" );
 		break;
+	}
+
+	if ( hitscan ) {
+		G_RestoreClients();
 	}
 }
 

@@ -82,6 +82,17 @@ vmCvar_t	g_dropPowerups;
 vmCvar_t	g_inactivity;
 vmCvar_t	g_debugMove;
 vmCvar_t	g_debugDamage;
+vmCvar_t	g_debugLagComp;
+vmCvar_t	g_lagHaxMs;
+vmCvar_t	g_lagHaxHistory;
+vmCvar_t	sv_warmupReadyPercentage;
+vmCvar_t	g_warmupDelay;
+vmCvar_t	g_warmupReadyDelay;
+vmCvar_t	g_warmupReadyDelayAction;
+vmCvar_t	g_timeoutCount;
+vmCvar_t	g_timeoutLen;
+vmCvar_t	g_damagePlums;
+vmCvar_t	bot_autoReady;
 vmCvar_t	g_debugAlloc;
 vmCvar_t	g_weaponRespawn;
 vmCvar_t	g_motd;
@@ -194,6 +205,18 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_inactivity, "g_inactivity", "0", 0, 0, qtrue },
 	{ &g_debugMove, "g_debugMove", "0", 0, 0, qfalse },
 	{ &g_debugDamage, "g_debugDamage", "0", 0, 0, qfalse },
+	{ &g_debugLagComp, "g_debugLagComp", "0", 0, 0, qfalse },
+	// baseql: Quake Live's lag compensation, ready-up, timeouts and damage plums
+	{ &g_lagHaxMs, "g_lagHaxMs", "80", 0, 0, qfalse },
+	{ &g_lagHaxHistory, "g_lagHaxHistory", "4", 0, 0, qfalse },
+	{ &sv_warmupReadyPercentage, "sv_warmupReadyPercentage", "0.51", 0, 0, qfalse },
+	{ &g_warmupDelay, "g_warmupDelay", "15", 0, 0, qfalse },
+	{ &g_warmupReadyDelay, "g_warmupReadyDelay", "0", 0, 0, qfalse },
+	{ &g_warmupReadyDelayAction, "g_warmupReadyDelayAction", "1", 0, 0, qfalse },
+	{ &g_timeoutCount, "g_timeoutCount", "0", 0, 0, qfalse },
+	{ &g_timeoutLen, "g_timeoutLen", "60", 0, 0, qfalse },
+	{ &g_damagePlums, "g_damagePlums", "2", 0, 0, qfalse },
+	{ &bot_autoReady, "bot_autoReady", "1", 0, 0, qfalse },
 	{ &g_debugAlloc, "g_debugAlloc", "0", 0, 0, qfalse },
 	{ &g_motd, "g_motd", "", 0, 0, qfalse },
 	{ &g_blood, "com_blood", "1", 0, 0, qfalse },
@@ -563,6 +586,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	G_RemapTeamShaders();
 
 	trap_SetConfigstring( CS_INTERMISSION, "" );
+	// baseql: they outlive a map_restart
+	trap_SetConfigstring( CS_READYUP, "" );
+	trap_SetConfigstring( CS_PAUSE, "" );
 }
 
 
@@ -1532,6 +1558,7 @@ void CheckTournament( void ) {
 				trap_SetConfigstring( CS_WARMUP, va("%i", level.warmupTime) );
 				G_LogPrintf( "Warmup:\n" );
 			}
+			G_ClearReadyUp();
 			return;
 		}
 
@@ -1548,6 +1575,11 @@ void CheckTournament( void ) {
 		// if all players have arrived, start the countdown
 		if ( level.warmupTime < 0 ) {
 			if ( level.numPlayingClients == 2 ) {
+				// baseql: once enough of them have readied up
+				if ( !G_ReadyToStart() ) {
+					return;
+				}
+
 				// fudge by -1 to account for extra delays
 				if ( g_warmup.integer > 1 ) {
 					level.warmupTime = level.time + ( g_warmup.integer - 1 ) * 1000;
@@ -1589,6 +1621,7 @@ void CheckTournament( void ) {
 				trap_SetConfigstring( CS_WARMUP, va("%i", level.warmupTime) );
 				G_LogPrintf( "Warmup:\n" );
 			}
+			G_ClearReadyUp();
 			return; // still waiting for team members
 		}
 
@@ -1604,6 +1637,11 @@ void CheckTournament( void ) {
 
 		// if all players have arrived, start the countdown
 		if ( level.warmupTime < 0 ) {
+			// baseql: once enough of them have readied up
+			if ( !G_ReadyToStart() ) {
+				return;
+			}
+
 			// fudge by -1 to account for extra delays
 			if ( g_warmup.integer > 1 ) {
 				level.warmupTime = level.time + ( g_warmup.integer - 1 ) * 1000;
@@ -1852,6 +1890,9 @@ void G_RunFrame( int levelTime ) {
 	// get any cvar changes
 	G_UpdateCvars();
 
+	// baseql: while paused, the game's clocks stand still
+	G_RunPause();
+
 	//
 	// go through all allocated objects
 	//
@@ -1922,6 +1963,11 @@ void G_RunFrame( int levelTime ) {
 			ClientEndFrame( ent );
 		}
 	}
+
+	// baseql: remember where everyone is for lag compensation, and show
+	// attackers the damage they did this frame
+	G_StoreLagFrames();
+	G_SendDamagePlums();
 
 	// see if it is time to do a tournement restart
 	CheckTournament();

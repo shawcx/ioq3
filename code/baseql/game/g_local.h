@@ -246,7 +246,19 @@ typedef struct {
 	int			voteCount;			// to prevent people from constantly calling votes
 	int			teamVoteCount;		// to prevent people from constantly calling votes
 	qboolean	teamInfo;			// send team overlay updates?
+	qboolean	ready;				// baseql: readied up for the match during warmup
+	int			timeouts;			// baseql: timeouts called this match
 } clientPersistant_t;
+
+// baseql: where a player was at the end of a server frame, for lag compensation
+#define	MAX_LAGCOMP_FRAMES		32
+
+typedef struct {
+	int			time;
+	vec3_t		origin;
+	vec3_t		mins, maxs;
+	int			teleportBit;		// EF_TELEPORT_BIT, which clients don't interpolate across
+} lagCompFrame_t;
 
 
 // this structure is cleared on each ClientSpawn(),
@@ -317,6 +329,19 @@ struct gclient_s {
 #endif
 
 	char		*areabits;
+
+	// baseql: lag compensation, see g_lagcomp.c
+	lagCompFrame_t	lagFrames[MAX_LAGCOMP_FRAMES];
+	int			lagNewest;			// index of the newest frame
+	int			lagCount;			// frames stored since spawning
+	qboolean	lagShifted;			// moved back for a shot; the real position is saved below
+	vec3_t		lagSavedOrigin, lagSavedMins, lagSavedMaxs;
+
+	// baseql: damage one attacker did to this player this frame, sent as one damage plum
+	int			plumDamage;
+	int			plumAttacker;
+	int			plumMod;
+	vec3_t		plumOrigin;
 };
 
 
@@ -399,6 +424,13 @@ typedef struct {
 	int			exitTime;
 	vec3_t		intermission_origin;	// also used for spectator spawns
 	vec3_t		intermission_angle;
+
+	// baseql: match flow, see g_match.c
+	int			readyDelayTime;			// level.time someone first readied up, for g_warmupReadyDelay
+	int			pauseTime;				// level.time the game was paused, 0 when it isn't
+	int			pauseEnd;				// level.time it resumes, 0 when not yet set
+	int			pauseClient;			// who called the timeout, -1 for the server
+	int			teamTimeouts[TEAM_NUM_TEAMS];	// timeouts each team called, in team games
 
 	qboolean	locationLinked;			// target_locations get linked
 	gentity_t	*locationHead;			// head of the location list
@@ -574,6 +606,27 @@ void player_die (gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 void AddScore( gentity_t *ent, vec3_t origin, int score );
 void CalculateRanks( void );
 qboolean SpotWouldTelefrag( gentity_t *spot );
+void G_SendDamagePlums( void );
+
+//
+// g_lagcomp.c
+//
+void G_StoreLagFrames( void );
+void G_RewindClients( gentity_t *shooter );
+void G_RestoreClients( void );
+
+//
+// g_match.c
+//
+qboolean G_ReadyToStart( void );
+void G_ClearReadyUp( void );
+void G_RunPause( void );
+void Cmd_ReadyUp_f( gentity_t *ent );
+void Cmd_Timeout_f( gentity_t *ent );
+void Cmd_Timein_f( gentity_t *ent );
+void Svcmd_Pause_f( void );
+void Svcmd_Unpause_f( void );
+void Svcmd_AllReady_f( void );
 
 //
 // g_svcmds.c
@@ -792,6 +845,17 @@ extern	vmCvar_t	g_inactivity;
 extern	vmCvar_t	g_debugMove;
 extern	vmCvar_t	g_debugAlloc;
 extern	vmCvar_t	g_debugDamage;
+extern	vmCvar_t	g_debugLagComp;
+extern	vmCvar_t	g_lagHaxMs;
+extern	vmCvar_t	g_lagHaxHistory;
+extern	vmCvar_t	sv_warmupReadyPercentage;
+extern	vmCvar_t	g_warmupDelay;
+extern	vmCvar_t	g_warmupReadyDelay;
+extern	vmCvar_t	g_warmupReadyDelayAction;
+extern	vmCvar_t	g_timeoutCount;
+extern	vmCvar_t	g_timeoutLen;
+extern	vmCvar_t	g_damagePlums;
+extern	vmCvar_t	bot_autoReady;
 extern	vmCvar_t	g_weaponRespawn;
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;

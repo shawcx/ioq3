@@ -72,6 +72,8 @@ set(BASEQL_GAME_SOURCES
     ${BASEQL_DIR}/game/g_factory.c
     ${BASEQL_DIR}/game/g_items.c
     ${BASEQL_DIR}/game/g_json.c
+    ${BASEQL_DIR}/game/g_lagcomp.c
+    ${BASEQL_DIR}/game/g_match.c
     ${BASEQL_DIR}/game/g_mem.c
     ${BASEQL_DIR}/game/g_misc.c
     ${BASEQL_DIR}/game/g_missile.c

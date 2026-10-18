@@ -305,6 +305,7 @@ CG_CheckLocalSounds
 */
 void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 	int			highScore, reward;
+	int			damage, i;
 #ifdef MISSIONPACK
 	int			health, armor;
 #endif
@@ -316,7 +317,18 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 	}
 
 	// hit changes
-	if ( ps->persistant[PERS_HITS] > ops->persistant[PERS_HITS] ) {
+	if ( !cg_hitBeep.integer ) {
+		// baseql: no hit beeps
+	} else if ( ps->persistant[PERS_HITS] > ops->persistant[PERS_HITS] && cg_hitBeep.integer == 2
+			&& cgs.media.hitDamageSounds[0] ) {
+		// baseql: Quake Live's, pitched lower for more damage
+		damage = ( ps->persistant[PERS_DAMAGE_GIVEN] - ops->persistant[PERS_DAMAGE_GIVEN] ) & 0x7fff;
+		i = damage / 25;
+		if ( i > 3 ) {
+			i = 3;
+		}
+		trap_S_StartLocalSound( cgs.media.hitDamageSounds[i], CHAN_LOCAL_SOUND );
+	} else if ( ps->persistant[PERS_HITS] > ops->persistant[PERS_HITS] ) {
 #ifdef MISSIONPACK
 		armor  = ps->persistant[PERS_ATTACKEE_ARMOR] & 0xff;
 		health = ps->persistant[PERS_ATTACKEE_ARMOR] >> 8;
@@ -456,7 +468,7 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 	if ( cgs.timelimit > 0 ) {
 		int		msec;
 
-		msec = cg.time - cgs.levelStartTime;
+		msec = CG_LevelTime();
 		if ( !( cg.timelimitWarnings & 4 ) && msec > ( cgs.timelimit * 60 + 2 ) * 1000 ) {
 			cg.timelimitWarnings |= 1 | 2 | 4;
 			trap_S_StartLocalSound( cgs.media.suddenDeathSound, CHAN_ANNOUNCER );

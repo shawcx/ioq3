@@ -1772,6 +1772,11 @@ void ClientCommand( int clientNum ) {
 		Cmd_Score_f (ent);
 		return;
 	}
+	// baseql: also at intermission, where it readies for the next map
+	if (Q_stricmp (cmd, "readyup") == 0) {
+		Cmd_ReadyUp_f (ent);
+		return;
+	}
 
 	// ignore all other commands when at intermission
 	if (level.intermissiontime) {
@@ -1817,6 +1822,10 @@ void ClientCommand( int clientNum ) {
 		Cmd_SetViewpos_f( ent );
 	else if (Q_stricmp (cmd, "stats") == 0)
 		Cmd_Stats_f( ent );
+	else if (Q_stricmp (cmd, "timeout") == 0)
+		Cmd_Timeout_f( ent );
+	else if (Q_stricmp (cmd, "timein") == 0)
+		Cmd_Timein_f( ent );
 	else
 		trap_SendServerCommand( clientNum, va("print \"unknown cmd %s\n\"", cmd ) );
 }

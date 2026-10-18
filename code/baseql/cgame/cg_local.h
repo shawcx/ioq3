@@ -221,6 +221,7 @@ typedef enum {
 	LE_FADE_RGB,
 	LE_SCALE_FADE,
 	LE_SCOREPLUM,
+	LE_DAMAGEPLUM,		// baseql
 #ifdef MISSIONPACK
 	LE_KAMIKAZE,
 	LE_INVULIMPACT,
@@ -597,6 +598,7 @@ typedef struct {
 	// warmup countdown
 	int			warmup;
 	int			warmupCount;
+	int			pauseCount;			// baseql: the resume countdown's last second announced
 
 	//==========================
 
@@ -884,6 +886,7 @@ typedef struct {
 	sfxHandle_t hitSoundHighArmor;
 	sfxHandle_t hitSoundLowArmor;
 	sfxHandle_t hitTeamSound;
+	sfxHandle_t hitDamageSounds[4];		// baseql: Quake Live's hit beeps, from little damage to a lot
 	sfxHandle_t impressiveSound;
 	sfxHandle_t excellentSound;
 	sfxHandle_t deniedSound;
@@ -1028,6 +1031,13 @@ typedef struct {
 
 	int				levelStartTime;
 
+	// baseql: from CS_READYUP and CS_PAUSE
+	int				readyNeeded;			// players who must ready up, 0 when not waiting for that
+	char			readyFlags[MAX_CLIENTS + 1];	// '1' for each client who is ready
+	int				pauseTime;				// server time the game paused, 0 when it isn't
+	int				pauseEnd;				// server time it resumes, 0 when not yet set
+	int				pauseClient;			// who called the timeout, -1 for the server
+
 	int				scores1, scores2;		// from configstrings
 	int				redflag, blueflag;		// flag status from configstrings
 	int				flagStatus;
@@ -1158,6 +1168,8 @@ extern	vmCvar_t		cg_noVoiceChats;
 extern	vmCvar_t		cg_noVoiceText;
 #endif
 extern  vmCvar_t		cg_scorePlum;
+extern  vmCvar_t		cg_hitBeep;
+extern  vmCvar_t		cg_damagePlum;
 extern	vmCvar_t		cg_smoothClients;
 extern	vmCvar_t		pmove_fixed;
 extern	vmCvar_t		pmove_msec;
@@ -1419,6 +1431,7 @@ void CG_InvulnerabilityJuiced( vec3_t org );
 void CG_LightningBoltBeam( vec3_t start, vec3_t end );
 #endif
 void CG_ScorePlum( int client, vec3_t org, int score );
+void CG_DamagePlum( vec3_t org, int damage, int mod );
 
 void CG_GibPlayer( vec3_t playerOrigin );
 void CG_BigExplode( vec3_t playerOrigin );
@@ -1461,6 +1474,7 @@ void CG_ExecuteNewServerCommands( int latestSequence );
 void CG_ParseServerinfo( void );
 void CG_SetConfigValues( void );
 void CG_ShaderStateChanged(void);
+int CG_LevelTime( void );
 #ifdef MISSIONPACK
 void CG_LoadVoiceChats( void );
 void CG_VoiceChatLocal( int mode, qboolean voiceOnly, int clientNum, int color, const char *cmd );

@@ -2,7 +2,7 @@
 """Build quakelive.pk3 for baseql from your own copy of Quake Live.
 
 Packs the Heavy Machinegun's and Green Armor's models, sounds and icons, Quake
-Live's HUDs and fonts, and Quake Live's maps with the textures, shaders, models and
+Live's HUDs, fonts and hit beeps, and Quake Live's maps with the textures, shaders, models and
 sounds they use, so baseql can load them. Files that Quake III Arena or Team
 Arena already provide are left out, so Quake 3's own maps keep their look.
 
@@ -54,6 +54,9 @@ HUD_ASSET_PREFIXES = ("ui/assets/hud/",)
 # fallback font for other scripts, droidsansfallbackfull.ttf, is left out: the
 # engine draws only Latin-1.
 FONT_FILES = ("fonts/handelgothic.ttf", "fonts/notosans-regular.ttf", "fonts/droidsansmono.ttf")
+
+# hit beeps, pitched lower for more damage (cg_hitBeep 2)
+FEEDBACK_FILES = tuple("sound/feedback/hit%d.ogg" % i for i in range(4))
 
 # Quake Live gametype names in arenas.txt, as the Team Arena menus spell them
 ARENA_TYPES = {"duel": "tourney", "tdm": "team", "har": "harvester"}
@@ -365,7 +368,7 @@ class Collector:
         for name in sorted(self.ql.names()):
             if name.startswith(HUD_ASSET_PREFIXES):
                 self.add_file(name)
-        for name in FONT_FILES:
+        for name in FONT_FILES + FEEDBACK_FILES:
             if not self.add_file(name):
                 self.missing.add(name)
 

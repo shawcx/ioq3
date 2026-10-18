@@ -11,7 +11,8 @@ How to set up baseql for 1v1 duels on Quake Live's maps, on your own server.
   `pak1.pk3`–`pak8.pk3`.
 - Team Arena, whose menus baseql uses: `missionpack/pak0.pk3` plus the
   point release's `pak1.pk3`–`pak3.pk3`.
-- Quake Live, to build `quakelive.pk3` (maps, HMG, Green Armor, HUD, fonts).
+- Quake Live, to build `quakelive.pk3` (maps, HMG, Green Armor, HUD, fonts,
+  hit beeps).
 - `baseql.pk3`: the same file the server uses.
 
 The point release files are free: `quake3-latest-pk3s.zip` from
@@ -47,10 +48,19 @@ ioquake3 +set fs_basegame missionpack +set fs_game baseql
 console, `seta snaps 40` gets a snapshot every server frame, then
 `connect <server>`.
 
-A duel starts with a 10 second countdown once both players are in. It runs 10
-minutes; a tie at the end goes to sudden death. At the scoreboard, press fire:
-the next map, picked at random from Quake Live's duel maps, loads when both
-players have pressed it or 10 seconds after the first did.
+Once both players are in, each types `readyup` in the console; a 10 second
+countdown starts when both have. A duel runs 10 minutes; a tie at the end goes
+to sudden death. At the scoreboard, press fire (or type `readyup`): the next
+map, picked at random from Quake Live's duel maps, loads when both players have
+or 10 seconds after the first did.
+
+Each player has 3 timeouts a match: `timeout` pauses the game for a minute,
+and `timein` ends your timeout early. Play resumes after a 3 second countdown.
+
+Hitscan weapons are lag compensated, as in Quake Live: up to 80 ms, the server
+counts a hit where you saw your opponent. Damage you do shows as numbers over
+your opponent (`cg_damagePlum`), and the hit beep is pitched lower for more
+damage (`cg_hitBeep`); see `docs/baseql-cvars.md`.
 
 The HUD is Quake Live's standard one. `seta cg_hudFiles ui/hud2.txt` switches
 to the minimal HUD and `ui/hud3.txt` to the competitive one; `loadhud` applies
@@ -74,12 +84,13 @@ ioq3ded +set fs_basegame missionpack +set fs_game baseql \
   it from the server rather than building your own.
 - `startRandomMap` changes to a random duel map; `map <name> duel` to a given
   one.
+- `pause` and `unpause` pause the match and resume it; `allready` readies up
+  both players.
+- If a player's ping is above about 50 ms, `g_lagHaxMs 150` and
+  `g_lagHaxHistory 8` compensate more of it.
 
 ## Not there yet
 
-- Ready-up before the countdown, timeouts and pauses.
-- Lag compensation for hitscan weapons, so leading targets depends on ping as
-  in vanilla Quake 3.
 - Forced enemy models and bright skins.
 - Quake Live's vote for the next map at the end of a match.
 - PQL movement, armor tiers and step/ramp jumps.

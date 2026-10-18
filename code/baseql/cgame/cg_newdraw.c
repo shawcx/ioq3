@@ -1352,7 +1352,7 @@ static void CG_DrawArmorTieredColorized( rectDef_t *rect, vec4_t color, qhandle_
 static int CG_MatchTime( void ) {
 	int		msec;
 
-	msec = cg.time - cgs.levelStartTime;
+	msec = CG_LevelTime();
 	return ( cg.warmup || msec < 0 ) ? 0 : msec;
 }
 

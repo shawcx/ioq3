@@ -488,6 +488,21 @@ qboolean	ConsoleCommand( void ) {
 		return qtrue;
 	}
 
+	if (Q_stricmp (cmd, "pause") == 0) {
+		Svcmd_Pause_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "unpause") == 0) {
+		Svcmd_Unpause_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "allready") == 0) {
+		Svcmd_AllReady_f();
+		return qtrue;
+	}
+
 	if (Q_stricmp (cmd, "botlist") == 0) {
 		Svcmd_BotList_f();
 		return qtrue;

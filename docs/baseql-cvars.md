@@ -114,6 +114,65 @@ QL's other `pmove_*` cvars (step, ramp, chain and double jumps, air control,
 crouch slide, the jump velocity formula) aren't implemented: there's no public
 description of what they do to check against.
 
+## Lag compensation
+
+Hitscan weapons (gauntlet, machinegun, shotgun, lightning gun, railgun,
+chaingun, Heavy Machinegun) hit the other players where the shooter saw them:
+the server moves them back to the server time in the shooter's command, the
+time the shooter's screen was showing, then puts them back
+(`code/baseql/game/g_lagcomp.c`). Projectiles aren't compensated, as in QL.
+
+| Cvar | Default | Meaning |
+|---|---|---|
+| `g_lagHaxMs` | 80 | most milliseconds the server goes back; beyond that, players lead their targets. 0 turns lag compensation off |
+| `g_lagHaxHistory` | 4 | server frames of positions it keeps (up to 32); it can't go back further than the oldest. At `sv_fps 40` the defaults go back 75 ms |
+| `g_debugLagComp` | 0 | 1 prints every rewind: who fired, how far back, and where each player was moved from and to |
+
+What the two QL cvars do exactly isn't documented; this reading of them is an
+interpretation. A player's view is about their ping plus up to one snapshot
+behind, so the defaults fully cover pings up to about 50 ms. For players
+further away, raise both, for example `g_lagHaxMs 150` and `g_lagHaxHistory 8`.
+
+## Ready-up and timeouts
+
+| Cvar | Default | Meaning |
+|---|---|---|
+| `sv_warmupReadyPercentage` | 0.51 | share of the players who must type `readyup` before the warmup countdown starts, rounded up, so 2 of 2 in a duel. 0 starts as soon as there are enough players, as vanilla does |
+| `g_warmupDelay` | 15 | seconds after the map loads before a match may start, so everyone can connect |
+| `g_warmupReadyDelay` | 0 | if set, seconds after the first player readies up before the others are dealt with by... |
+| `g_warmupReadyDelayAction` | 1 | ...1: moving players who aren't ready to spectator, 2: making them ready |
+| `bot_autoReady` | 1 | bots count as ready |
+| `g_timeoutCount` | 0 | timeouts each player (each team in team games) may call per match; `duel.cfg` sets 3 |
+| `g_timeoutLen` | 60 | seconds a timeout lasts; 0 lasts until `timein` |
+
+Commands:
+
+- `readyup`: readies up in warmup, or takes it back. At the end of a match, it
+  readies for the next map, as the attack button does.
+- `timeout`, `timein`: call a timeout, and end it early; the caller, or the
+  caller's team, can end it.
+- On the server console: `pause` pauses until `unpause`, `unpause` ends any
+  pause or timeout, and `allready` readies up everyone in warmup.
+
+A paused game resumes after a 3 second countdown. While paused, players can
+look around but not move or fire, every game clock stops (the match timer,
+item respawns, powerups, respawning), and missiles, movers and dropped items
+hold still.
+
+## Hit feedback
+
+| Cvar | Default | Meaning |
+|---|---|---|
+| `g_damagePlums` | 2 | the server sends damage plums. Anything but 0 sends them; what QL's 1 and 2 mean isn't known |
+| `cg_damagePlum` | `g mg sg gl rl lg rg pg bfg gh ng pl cg hmg` | client: weapons, by their cvar suffix, whose damage shows as plums; empty shows none |
+| `cg_hitBeep` | 2 | client: 0 no hit beeps, 1 Team Arena's (pitched by the target's armor), 2 QL's, pitched lower for more damage |
+
+A plum is the damage done to one player in one server frame, so a shotgun
+blast shows as one number. It rises from where the attacker saw the target,
+white under 25 damage, then yellow, orange and red from 75. The hit beep uses
+QL's four sounds, from `quakelive.pk3`, in the same steps of 25; without them
+it falls back to Team Arena's. The steps and the colors are baseql's choice.
+
 ## How shared values reach clients
 
 `weapon_reload_*` and the `pmove_*` cvars affect player movement prediction, so

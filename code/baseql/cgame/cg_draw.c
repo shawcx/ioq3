@@ -763,7 +763,7 @@ static float CG_DrawTimer( float y ) {
 	int			mins, seconds, tens;
 	int			msec;
 
-	msec = cg.time - cgs.levelStartTime;
+	msec = CG_LevelTime();
 
 	seconds = msec / 1000;
 	mins = seconds / 60;
@@ -2327,6 +2327,92 @@ static void CG_DrawProxWarning( void ) {
 
 /*
 =================
+CG_DrawCenteredText
+
+baseql: a line of text centered on the screen
+=================
+*/
+static void CG_DrawCenteredText( float y, float scale, const char *s ) {
+	CG_Text_Paint( 320 - CG_Text_Width( s, scale, 0 ) / 2, y, scale, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE );
+}
+
+/*
+=================
+CG_DrawReadyUp
+
+baseql: warmup waits for players to ready up; who hasn't yet
+=================
+*/
+static void CG_DrawReadyUp( void ) {
+	char			names[256];
+	int				i, ready;
+	clientInfo_t	*ci;
+
+	ready = 0;
+	names[0] = '\0';
+	for ( i = 0 ; i < cgs.maxclients && cgs.readyFlags[i] ; i++ ) {
+		ci = &cgs.clientinfo[i];
+		if ( cgs.readyFlags[i] == '1' ) {
+			ready++;
+		} else if ( ci->infoValid && ci->team != TEAM_SPECTATOR ) {
+			Q_strcat( names, sizeof( names ), va( "%s%s" S_COLOR_WHITE, names[0] ? ", " : "", ci->name ) );
+		}
+	}
+
+	CG_DrawCenteredText( 60, 0.5f, "Waiting for players to ready up" );
+	CG_DrawCenteredText( 85, 0.3f, va( "%i of %i ready. Not ready: %s", ready, cgs.readyNeeded, names ) );
+	if ( cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR && cgs.readyFlags[cg.clientNum] != '1' ) {
+		CG_DrawCenteredText( 105, 0.3f, "Type readyup in the console when you're ready" );
+	}
+}
+
+/*
+=================
+CG_DrawPause
+
+baseql: a timeout or pause, and the countdown to the game going on
+=================
+*/
+static void CG_DrawPause( void ) {
+	int		msec, sec, mins, tens;
+
+	if ( !cgs.pauseTime ) {
+		return;
+	}
+
+	if ( cgs.pauseClient >= 0 && cgs.pauseClient < MAX_CLIENTS ) {
+		CG_DrawCenteredText( 160, 0.6f, "Timeout" );
+		CG_DrawCenteredText( 185, 0.3f, va( "Called by %s", cgs.clientinfo[cgs.pauseClient].name ) );
+	} else {
+		CG_DrawCenteredText( 160, 0.6f, "Paused" );
+		CG_DrawCenteredText( 185, 0.3f, "By the server" );
+	}
+
+	if ( !cgs.pauseEnd ) {
+		CG_DrawCenteredText( 205, 0.3f, cgs.pauseClient >= 0 ? "Until its caller types timein" : "Until the server unpauses" );
+		return;
+	}
+
+	msec = cgs.pauseEnd - cg.time;
+	sec = msec > 0 ? ( msec + 999 ) / 1000 : 0;
+	mins = sec / 60;
+	tens = ( sec % 60 ) / 10;
+	CG_DrawCenteredText( 205, 0.3f, va( "Resumes in %i:%i%i", mins, tens, sec % 10 ) );
+
+	if ( sec != cg.pauseCount ) {
+		cg.pauseCount = sec;
+		if ( sec == 3 ) {
+			trap_S_StartLocalSound( cgs.media.count3Sound, CHAN_ANNOUNCER );
+		} else if ( sec == 2 ) {
+			trap_S_StartLocalSound( cgs.media.count2Sound, CHAN_ANNOUNCER );
+		} else if ( sec == 1 ) {
+			trap_S_StartLocalSound( cgs.media.count1Sound, CHAN_ANNOUNCER );
+		}
+	}
+}
+
+/*
+=================
 CG_DrawWarmup
 =================
 */
@@ -2348,9 +2434,13 @@ static void CG_DrawWarmup( void ) {
 	}
 
 	if ( sec < 0 ) {
-		s = "Waiting for players";		
-		w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-		CG_DrawBigString(320 - w / 2, 24, s, 1.0F);
+		if ( cgs.readyNeeded ) {
+			CG_DrawReadyUp();
+		} else {
+			s = "Waiting for players";		
+			w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
+			CG_DrawBigString(320 - w / 2, 24, s, 1.0F);
+		}
 		cg.warmupCount = 0;
 		return;
 	}
@@ -2596,6 +2686,7 @@ static void CG_Draw2D(stereoFrame_t stereoFrame)
 	if ( !CG_DrawFollow() ) {
 		CG_DrawWarmup();
 	}
+	CG_DrawPause();
 
 	// don't draw center string if scoreboard is up
 	cg.scoreBoardShowing = CG_DrawScoreboard();

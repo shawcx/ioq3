@@ -164,6 +164,8 @@ vmCvar_t	cg_noVoiceText;
 #endif
 vmCvar_t	cg_hudFiles;
 vmCvar_t 	cg_scorePlum;
+vmCvar_t	cg_hitBeep;
+vmCvar_t	cg_damagePlum;
 vmCvar_t 	cg_smoothClients;
 vmCvar_t	pmove_fixed;
 //vmCvar_t	cg_pmove_fixed;
@@ -306,6 +308,9 @@ static cvarTable_t cvarTable[] = {
 	{ &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0", 0},
 	{ &cg_timescale, "timescale", "1", 0},
 	{ &cg_scorePlum, "cg_scorePlums", "1", CVAR_USERINFO | CVAR_ARCHIVE},
+	// baseql: Quake Live's hit beeps and damage plums
+	{ &cg_hitBeep, "cg_hitBeep", "2", CVAR_ARCHIVE},
+	{ &cg_damagePlum, "cg_damagePlum", "g mg sg gl rl lg rg pg bfg gh ng pl cg hmg", CVAR_ARCHIVE},
 	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_USERINFO | CVAR_ARCHIVE},
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
 
@@ -541,6 +546,7 @@ static void CG_RegisterSounds( void ) {
 	char	items[MAX_ITEMS+1];
 	char	name[MAX_QPATH];
 	const char	*soundName;
+	fileHandle_t	f;
 
 	// voice commands
 #ifdef MISSIONPACK
@@ -651,6 +657,15 @@ static void CG_RegisterSounds( void ) {
 	cgs.media.hitSoundHighArmor = trap_S_RegisterSound( "sound/feedback/hithi.wav", qfalse );
 	cgs.media.hitSoundLowArmor = trap_S_RegisterSound( "sound/feedback/hitlo.wav", qfalse );
 #endif
+	// baseql: Quake Live's, when quakelive.pk3 has them
+	for ( i = 0 ; i < ARRAY_LEN( cgs.media.hitDamageSounds ) ; i++ ) {
+		Com_sprintf( name, sizeof( name ), "sound/feedback/hit%i.ogg", i );
+		trap_FS_FOpenFile( name, &f, FS_READ );
+		if ( f ) {
+			trap_FS_FCloseFile( f );
+			cgs.media.hitDamageSounds[i] = trap_S_RegisterSound( name, qfalse );
+		}
+	}
 
 	cgs.media.impressiveSound = trap_S_RegisterSound( "sound/feedback/impressive.wav", qtrue );
 	cgs.media.excellentSound = trap_S_RegisterSound( "sound/feedback/excellent.wav", qtrue );

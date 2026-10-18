@@ -205,6 +205,53 @@ static void CG_ParseWarmup( void ) {
 
 /*
 ================
+CG_ParseReadyUp
+
+baseql: CS_READYUP, "<players needed> <0 or 1 per client>"
+================
+*/
+static void CG_ParseReadyUp( void ) {
+	const char	*s;
+
+	s = CG_ConfigString( CS_READYUP );
+	cgs.readyNeeded = atoi( s );
+	s = strchr( s, ' ' );
+	Q_strncpyz( cgs.readyFlags, s ? s + 1 : "", sizeof( cgs.readyFlags ) );
+}
+
+/*
+================
+CG_ParsePause
+
+baseql: CS_PAUSE, "<paused at> <resumes at, 0 if not set> <caller, -1 for
+the server>", or empty
+================
+*/
+static void CG_ParsePause( void ) {
+	const char	*s;
+
+	s = CG_ConfigString( CS_PAUSE );
+	cgs.pauseTime = atoi( s );
+	s = strchr( s, ' ' );
+	cgs.pauseEnd = s ? atoi( s + 1 ) : 0;
+	s = s ? strchr( s + 1, ' ' ) : NULL;
+	cgs.pauseClient = s ? atoi( s + 1 ) : -1;
+	cg.pauseCount = -1;
+}
+
+/*
+================
+CG_LevelTime
+
+baseql: how long the level has run, which stands still while it's paused
+================
+*/
+int CG_LevelTime( void ) {
+	return ( cgs.pauseTime ? cgs.pauseTime : cg.time ) - cgs.levelStartTime;
+}
+
+/*
+================
 CG_SetConfigValues
 
 Called on load to set the initial values from configure strings
@@ -229,6 +276,8 @@ void CG_SetConfigValues( void ) {
 	}
 #endif
 	cg.warmup = atoi( CG_ConfigString( CS_WARMUP ) );
+	CG_ParseReadyUp();
+	CG_ParsePause();
 }
 
 /*
@@ -313,6 +362,10 @@ static void CG_ConfigStringModified( void ) {
 		cgs.scores2 = atoi( str );
 	} else if ( num == CS_LEVEL_START_TIME ) {
 		cgs.levelStartTime = atoi( str );
+	} else if ( num == CS_READYUP ) {
+		CG_ParseReadyUp();
+	} else if ( num == CS_PAUSE ) {
+		CG_ParsePause();
 	} else if ( num == CS_VOTE_TIME ) {
 		cgs.voteTime = atoi( str );
 		cgs.voteModified = qtrue;

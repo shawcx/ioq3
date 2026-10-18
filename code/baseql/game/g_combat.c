@@ -44,6 +44,71 @@ void ScorePlum( gentity_t *ent, vec3_t origin, int score ) {
 
 /*
 ============
+G_SendDamagePlum
+
+baseql: shows the attacker, and whoever follows them, the damage they did to
+this player, where they hit them
+============
+*/
+static void G_SendDamagePlum( gentity_t *targ ) {
+	gclient_t	*client;
+	gentity_t	*plum;
+
+	client = targ->client;
+	if ( g_damagePlums.integer ) {
+		plum = G_TempEntity( client->plumOrigin, EV_DAMAGEPLUM );
+		plum->r.svFlags |= SVF_SINGLECLIENT;
+		plum->r.singleClient = client->plumAttacker;
+		plum->s.otherEntityNum = targ->s.number;
+		plum->s.time = client->plumDamage;
+		plum->s.eventParm = client->plumMod;
+	}
+	client->plumDamage = 0;
+}
+
+/*
+============
+G_AddDamagePlum
+
+baseql: adds to the damage an attacker did to a player this frame, so that a
+shotgun blast or a frame's worth of lightning shows as one number
+============
+*/
+static void G_AddDamagePlum( gentity_t *targ, gentity_t *attacker, int damage, int mod ) {
+	gclient_t	*client;
+
+	client = targ->client;
+	if ( client->plumDamage && client->plumAttacker != attacker->s.number ) {
+		G_SendDamagePlum( targ );
+	}
+	client->plumDamage += damage;
+	client->plumAttacker = attacker->s.number;
+	client->plumMod = mod;
+	// where the attacker saw them, if lag compensation moved them back
+	VectorCopy( targ->r.currentOrigin, client->plumOrigin );
+}
+
+/*
+============
+G_SendDamagePlums
+
+baseql: sends the frame's damage plums
+============
+*/
+void G_SendDamagePlums( void ) {
+	int			i;
+	gentity_t	*ent;
+
+	for ( i = 0 ; i < level.maxclients ; i++ ) {
+		ent = &g_entities[i];
+		if ( ent->inuse && ent->client->plumDamage ) {
+			G_SendDamagePlum( ent );
+		}
+	}
+}
+
+/*
+============
 AddScore
 
 Adds score to both the client and his team
@@ -807,6 +872,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	int			asave;
 	int			knockback;
 	int			max;
+	qboolean	hitEnemy = qfalse;
 #ifdef MISSIONPACK
 	vec3_t		bouncedir, impactpoint;
 #endif
@@ -963,6 +1029,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			attacker->client->ps.persistant[PERS_HITS]--;
 		} else {
 			attacker->client->ps.persistant[PERS_HITS]++;
+			hitEnemy = qtrue;
 		}
 		attacker->client->ps.persistant[PERS_ATTACKEE_ARMOR] = (targ->health<<8)|(client->ps.stats[STAT_ARMOR]);
 	}
@@ -981,6 +1048,13 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	// save some from armor
 	asave = CheckArmor (targ, take, dflags);
 	take -= asave;
+
+	// baseql: what the enemy took, for hit beeps pitched by damage and plums
+	if ( hitEnemy ) {
+		attacker->client->ps.persistant[PERS_DAMAGE_GIVEN] =
+			( attacker->client->ps.persistant[PERS_DAMAGE_GIVEN] + take + asave ) & 0x7fff;
+		G_AddDamagePlum( targ, attacker, take + asave, mod );
+	}
 
 	if ( g_debugDamage.integer ) {
 		G_Printf( "%i: client:%i health:%i damage:%i armor:%i\n", level.time, targ->s.number,

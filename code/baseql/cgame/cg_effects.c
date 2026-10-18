@@ -426,6 +426,84 @@ void CG_ScorePlum( int client, vec3_t org, int score ) {
 
 
 /*
+==================
+CG_DamagePlumWeapon
+
+baseql: the weapon's name in cg_damagePlum, NULL for damage that isn't a
+weapon's
+==================
+*/
+static const char *CG_DamagePlumWeapon( int mod ) {
+	switch ( mod ) {
+	case MOD_GAUNTLET:			return "g";
+	case MOD_MACHINEGUN:		return "mg";
+	case MOD_SHOTGUN:			return "sg";
+	case MOD_GRENADE:
+	case MOD_GRENADE_SPLASH:	return "gl";
+	case MOD_ROCKET:
+	case MOD_ROCKET_SPLASH:		return "rl";
+	case MOD_LIGHTNING:			return "lg";
+	case MOD_RAILGUN:			return "rg";
+	case MOD_PLASMA:
+	case MOD_PLASMA_SPLASH:		return "pg";
+	case MOD_BFG:
+	case MOD_BFG_SPLASH:		return "bfg";
+	case MOD_GRAPPLE:			return "gh";
+#ifdef MISSIONPACK
+	case MOD_NAIL:				return "ng";
+	case MOD_PROXIMITY_MINE:	return "pl";
+	case MOD_CHAINGUN:			return "cg";
+#endif
+	case MOD_HMG:				return "hmg";
+	default:					return NULL;
+	}
+}
+
+/*
+==================
+CG_DamagePlum
+
+baseql: the damage the player did to someone this frame, rising from where
+they were hit, for the weapons cg_damagePlum lists
+==================
+*/
+void CG_DamagePlum( vec3_t org, int damage, int mod ) {
+	localEntity_t	*le;
+	const char		*weapon;
+	char			*list, *token;
+
+	weapon = CG_DamagePlumWeapon( mod );
+	if ( !weapon || damage <= 0 ) {
+		return;
+	}
+
+	list = cg_damagePlum.string;
+	for ( token = COM_Parse( &list ) ; token[0] ; token = COM_Parse( &list ) ) {
+		if ( !Q_stricmp( token, weapon ) ) {
+			break;
+		}
+	}
+	if ( !token[0] ) {
+		return;
+	}
+
+	le = CG_AllocLocalEntity();
+	le->leFlags = 0;
+	le->leType = LE_DAMAGEPLUM;
+	le->startTime = cg.time;
+	le->endTime = cg.time + 1000;
+	le->lifeRate = 1.0 / ( le->endTime - le->startTime );
+	le->radius = damage;
+
+	// spread out plums that come in quick succession, so they don't pile up
+	VectorCopy( org, le->pos.trBase );
+	le->pos.trBase[0] += crandom() * 8;
+	le->pos.trBase[1] += crandom() * 8;
+
+	le->refEntity.reType = RT_SPRITE;
+}
+
+/*
 ====================
 CG_MakeExplosion
 ====================

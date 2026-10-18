@@ -89,6 +89,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define CS_TUNING				26		// baseql: values of the shared tuning cvars, see BG_SetTuning
 
 #define	CS_ITEMS				27		// string of 0's and 1's that tell which items are present
+#define CS_READYUP				28		// baseql: "<players needed> <0 or 1 per client>" while warmup waits for ready-ups
+#define CS_PAUSE				29		// baseql: "<paused at> <resumes at, 0 if not set> <caller, -1 for the server>"
 
 #define	CS_MODELS				32
 #define	CS_SOUNDS				(CS_MODELS+MAX_MODELS)
@@ -242,7 +244,8 @@ typedef enum {
 	PERS_DEFEND_COUNT,				// defend awards
 	PERS_ASSIST_COUNT,				// assist awards
 	PERS_GAUNTLET_FRAG_COUNT,		// kills with the guantlet
-	PERS_CAPTURES					// captures
+	PERS_CAPTURES,					// captures
+	PERS_DAMAGE_GIVEN				// baseql: damage done to enemies, modulo 32768, for hit beeps
 } persEnum_t;
 
 
@@ -457,7 +460,9 @@ typedef enum {
 	EV_TAUNT_FOLLOWME,
 	EV_TAUNT_GETFLAG,
 	EV_TAUNT_GUARDBASE,
-	EV_TAUNT_PATROL
+	EV_TAUNT_PATROL,
+
+	EV_DAMAGEPLUM			// baseql: damage done this frame, to the attacker
 
 } entity_event_t;
 

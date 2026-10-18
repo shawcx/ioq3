@@ -834,6 +834,8 @@ void ClientThink_real( gentity_t *ent ) {
 		client->ps.pm_type = PM_NOCLIP;
 	} else if ( client->ps.stats[STAT_HEALTH] <= 0 ) {
 		client->ps.pm_type = PM_DEAD;
+	} else if ( level.pauseTime ) {
+		client->ps.pm_type = PM_FREEZE;		// baseql: paused
 	} else {
 		client->ps.pm_type = PM_NORMAL;
 	}
@@ -868,7 +870,10 @@ void ClientThink_real( gentity_t *ent ) {
 	// go through as an attack unless it actually hits something
 	if ( client->ps.weapon == WP_GAUNTLET && !( ucmd->buttons & BUTTON_TALK ) &&
 		( ucmd->buttons & BUTTON_ATTACK ) && client->ps.weaponTime <= 0 ) {
+		// baseql: against the others where the attacker saw them
+		G_RewindClients( ent );
 		pm.gauntletHit = CheckGauntletAttack( ent );
+		G_RestoreClients();
 	}
 
 	if ( ent->flags & FL_FORCE_GESTURE ) {
@@ -945,6 +950,11 @@ void ClientThink_real( gentity_t *ent ) {
 		Pmove (&pm);
 #endif
 
+	// baseql: no beam while paused
+	if ( pm.ps->pm_type == PM_FREEZE ) {
+		client->ps.eFlags &= ~EF_FIRING;
+	}
+
 	// save results of pmove
 	if ( ent->client->ps.eventSequence != oldEventSequence ) {
 		ent->eventTime = level.time;
@@ -964,8 +974,11 @@ void ClientThink_real( gentity_t *ent ) {
 	// use the snapped origin for linking so it matches client predicted versions
 	VectorCopy( ent->s.pos.trBase, ent->r.currentOrigin );
 
-	VectorCopy (pm.mins, ent->r.mins);
-	VectorCopy (pm.maxs, ent->r.maxs);
+	// baseql: a frozen Pmove doesn't set the bounds; keep the last ones
+	if ( pm.ps->pm_type != PM_FREEZE ) {
+		VectorCopy (pm.mins, ent->r.mins);
+		VectorCopy (pm.maxs, ent->r.maxs);
+	}
 
 	ent->waterlevel = pm.waterlevel;
 	ent->watertype = pm.watertype;
@@ -1000,6 +1013,11 @@ void ClientThink_real( gentity_t *ent ) {
 
 	// check for respawning
 	if ( client->ps.stats[STAT_HEALTH] <= 0 ) {
+		// baseql: not while paused
+		if ( level.pauseTime ) {
+			return;
+		}
+
 		// wait for the attack button to be pressed
 		if ( level.time > client->respawnTime ) {
 			// as in Quake Live, players respawn by themselves after g_respawn_delay_max
@@ -1017,8 +1035,10 @@ void ClientThink_real( gentity_t *ent ) {
 		return;
 	}
 
-	// perform once-a-second actions
-	ClientTimerActions( ent, msec );
+	// perform once-a-second actions, which stop while paused
+	if ( !level.pauseTime ) {
+		ClientTimerActions( ent, msec );
+	}
 }
 
 /*

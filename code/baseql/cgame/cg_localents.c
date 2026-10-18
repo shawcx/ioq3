@@ -797,6 +797,74 @@ void CG_AddScorePlum( localEntity_t *le ) {
 
 
 
+/*
+===================
+CG_AddDamagePlum
+
+baseql: a damage plum rises over the player who was hit, and fades. Beyond
+a few hundred units it grows with the distance, so it stays readable.
+===================
+*/
+static void CG_AddDamagePlum( localEntity_t *le ) {
+	refEntity_t	*re;
+	vec3_t		origin, dir, vec, up = {0, 0, 1};
+	float		c, len, size;
+	int			i, damage, digits[10], numdigits;
+
+	re = &le->refEntity;
+
+	c = ( le->endTime - cg.time ) * le->lifeRate;
+
+	// white, yellow, orange and red, in the hit beeps' steps
+	damage = le->radius;
+	re->shaderRGBA[0] = 0xff;
+	if ( damage >= 75 ) {
+		re->shaderRGBA[1] = re->shaderRGBA[2] = 0x20;
+	} else if ( damage >= 50 ) {
+		re->shaderRGBA[1] = 0x80;
+		re->shaderRGBA[2] = 0;
+	} else if ( damage >= 25 ) {
+		re->shaderRGBA[1] = 0xff;
+		re->shaderRGBA[2] = 0;
+	} else {
+		re->shaderRGBA[1] = re->shaderRGBA[2] = 0xff;
+	}
+	if ( c < 0.5 ) {
+		re->shaderRGBA[3] = 0xff * 2 * c;
+	} else {
+		re->shaderRGBA[3] = 0xff;
+	}
+
+	VectorCopy( le->pos.trBase, origin );
+	origin[2] += 64 - c * 24;
+
+	VectorSubtract( cg.refdef.vieworg, origin, dir );
+	len = VectorLength( dir );
+	if ( len < 20 ) {
+		CG_FreeLocalEntity( le );
+		return;
+	}
+	size = NUMBER_SIZE;
+	if ( len > 300 ) {
+		size *= len / 300;
+	}
+	re->radius = size / 2;
+
+	CrossProduct( dir, up, vec );
+	VectorNormalize( vec );
+
+	for ( numdigits = 0 ; !( numdigits && !damage ) ; numdigits++ ) {
+		digits[numdigits] = damage % 10;
+		damage /= 10;
+	}
+
+	for ( i = 0 ; i < numdigits ; i++ ) {
+		VectorMA( origin, ( (float)numdigits / 2 - i ) * size, vec, re->origin );
+		re->customShader = cgs.media.numberShaders[digits[numdigits - 1 - i]];
+		trap_R_AddRefEntityToScene( re );
+	}
+}
+
 //==============================================================================
 
 /*
@@ -858,6 +926,10 @@ void CG_AddLocalEntities( void ) {
 
 		case LE_SCOREPLUM:
 			CG_AddScorePlum( le );
+			break;
+
+		case LE_DAMAGEPLUM:
+			CG_AddDamagePlum( le );
 			break;
 
 #ifdef MISSIONPACK

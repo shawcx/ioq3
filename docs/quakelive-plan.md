@@ -52,9 +52,13 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
   flags its standard, minimal and competitive HUDs use for duels.
 - [x] Quake Live's TrueType fonts in the HUD, through a vendored FreeType; the
   engine keys fonts by name and size and renders them at screen resolution.
+- [x] Lag compensation for hitscan weapons (`g_lagHaxMs`, `g_lagHaxHistory`).
+- [x] Phase 3, first part: ready-up (`sv_warmupReadyPercentage`, `readyup`),
+  timeouts (`timeout`, `timein`) and server pauses.
+- [x] Phase 4 feedback: damage plums and hit beeps pitched by damage.
 - [ ] Next in phase 1: the rest of movement (PQL air control, step/ramp/chain
   jumps, crouch slide) and armor, once their rules can be checked against a
-  source; lag compensation; spawn selection.
+  source; spawn selection.
 
 ## Current focus: an initial playable duel
 
@@ -66,13 +70,15 @@ on a private server: no bots and no other gametypes. Done for that:
 - The duel factory with Quake Live's duel values, Quake Live's duel map pool,
   and `duel.cfg` for the server.
 - Duels move on to the next pool map after each match, as in Quake Live.
-- Quake Live's HUDs (standard, minimal, competitive).
+- Quake Live's HUDs (standard, minimal, competitive) in Quake Live's fonts.
+- Lag compensation for hitscan weapons, ready-up, timeouts and pauses, damage
+  plums and hit beeps pitched by damage.
 - `baseql.pk3` packaging, and a setup guide (`docs/baseql-duel.md`).
 - Tested end to end: two clients on a pure server, warmup, match, time limit,
   and the next map from the pool.
 
-Next for duels, by value: lag compensation (if you play over the internet),
-ready-up and timeouts, forced enemy models and bright skins.
+Next for duels, by value: forced enemy models and bright skins, the
+end-of-match map vote (`docs/baseql-roadmap.md` has the full list).
 
 ## Ground rules
 
