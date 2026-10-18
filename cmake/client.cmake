@@ -64,6 +64,10 @@ endif()
 if(USE_MUMBLE)
     list(APPEND CLIENT_DEFINITIONS USE_MUMBLE)
     list(APPEND CLIENT_LIBRARY_SOURCES ${SOURCE_DIR}/client/libmumblelink.c)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        # shm_open is in librt before glibc 2.34
+        list(APPEND CLIENT_LIBRARIES rt)
+    endif()
 endif()
 
 list(APPEND CLIENT_BINARY_SOURCES

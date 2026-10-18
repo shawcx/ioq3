@@ -5,7 +5,7 @@ long-range phase plan is `docs/quakelive-plan.md`. The user guides are
 `docs/baseql-duel.md` (setup), `docs/baseql-cvars.md`,
 `docs/baseql-factories.md` and `docs/baseql-ql-pak.md`.
 
-Updated 2026-10-18 at `279ddbae`, branch `baseql` (not pushed).
+Updated 2026-10-18, branch `baseql` (not pushed).
 
 ## Goals
 
@@ -59,18 +59,19 @@ were checked as described under Testing.
 
 ## Roadmap
 
-### Now: get the new build to both players
+### Now: play the new build
 
-The packages already handed out predate the HUD, its fonts, lag compensation,
-ready-up and timeouts, hit feedback, forced models and the map vote.
+As of 2026-10-18, the player package (Ubuntu 20.04 binaries) and the server's
+`baseql.pk3` and `quakelive.pk3` are built from `5dfb3251` plus the `librt`
+build fix, and the server is stopped. One local duel against a bot went
+through ready-up and a map change without problems.
 
-1. Each player rebuilds `quakelive.pk3`; it now carries the HUD scripts,
-   Quake Live's fonts, hit beeps and bright skins, and shaders without the
-   keywords that made some surfaces invisible.
-2. Rebuild the Linux binaries, now with `-DUSE_FREETYPE=ON`, and `baseql.pk3`
-   (see Deployment), and copy the server's `baseql.pk3` to both players.
-3. Restart the server.
-4. Play a few duels and check the "Not verified yet" list below.
+1. The friend gets the new package and rebuilds `quakelive.pk3`; it now
+   carries the HUD scripts, Quake Live's fonts, hit beeps and bright skins,
+   and shaders without the keywords that made some surfaces invisible.
+2. Start the server, and play a few duels to the end of a match, so the map
+   vote runs; check the "Not verified yet" list below.
+3. Note the friend's ping (`status` on the server) to tune lag compensation.
 
 ### Next for duels, in order
 
@@ -424,10 +425,12 @@ and QVMs; game code must also build with q3lcc.
 
 ## Deployment
 
-- **Linux binaries** build in an Ubuntu 22.04 container (gcc, Ninja,
-  `libsdl2-dev`, CMake 3.31 from pip): `cmake -S . -B build-linux -G Ninja
-  -DCMAKE_BUILD_TYPE=Release -DBUILD_BASEQL=ON -DUSE_FREETYPE=ON`. The result
-  needs glibc 2.34 or newer and SDL2. FreeType is built in.
+- **Linux binaries** build in an Ubuntu 20.04 container (gcc 9, Ninja,
+  `libsdl2-dev` 2.0.10, CMake 3.31 from pip): `cmake -S . -B build-linux -G
+  Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_BASEQL=ON -DUSE_FREETYPE=ON`. The
+  result needs glibc 2.29 or newer, so it runs on Ubuntu 20.04, Debian 11 and
+  later, and SDL2. FreeType is built in. It was checked on Ubuntu 20.04 under
+  Xvfb with Mesa's llvmpipe, on both renderers.
 - **Player package:** `ioquake3`, both renderers, `baseql/baseql.pk3`,
   `make-ql-pak.py`, a README with setup steps, `COPYING.txt` and a source
   tarball of the same commit (GPL). No Quake Live, Quake 3 or Team Arena data.
@@ -504,6 +507,8 @@ Things that cost time once:
   `cmake/platforms/macos.cmake`), so Homebrew's arm64-only libraries don't
   link; that's why FreeType is vendored.
 - `misc/update-libs.sh` needs GNU `find`; run it on Linux.
+- Before glibc 2.34, `shm_open` (Mumble's link, `libmumblelink.c`) is in
+  `librt`, which `cmake/client.cmake` now links on Linux.
 - `duel.cfg` sets `bot_enable 0`, and it wins over a `+set bot_enable 1` on
   the command line; for bot tests, set the warmup cvars directly instead.
 - `addbot` sent before the map finishes loading is silently ignored.
