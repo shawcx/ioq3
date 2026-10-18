@@ -50,6 +50,23 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
   jumps, crouch slide) and armor, once their rules can be checked against a
   source; lag compensation; spawn selection.
 
+## Current focus: an initial playable duel
+
+The first target is 1v1 duels between two human players on Quake Live's maps,
+on a private server: no bots and no other gametypes. Done for that:
+
+- Quake Live maps, HMG and Green Armor from the player's own Quake Live
+  (`make-ql-pak.py`), with reproducible output for pure servers.
+- The duel factory with Quake Live's duel values, Quake Live's duel map pool,
+  and `duel.cfg` for the server.
+- Duels move on to the next pool map after each match, as in Quake Live.
+- `baseql.pk3` packaging, and a setup guide (`docs/baseql-duel.md`).
+- Tested end to end: two clients on a pure server, warmup, match, time limit,
+  and the next map from the pool.
+
+Next for duels, by value: lag compensation (if you play over the internet),
+ready-up and timeouts, forced enemy models and bright skins.
+
 ## Ground rules
 
 1. **Keep the QL game code in its own tree.** Copy `code/game`, `code/cgame`

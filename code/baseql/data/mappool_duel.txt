@@ -1,0 +1,28 @@
+# baseql duel map pool: Quake Live's duel maps, which come from quakelive.pk3
+# (see docs/baseql-ql-pak.md). Maps that aren't installed are skipped.
+aerowalk|duel
+battleforged|duel
+bloodrun|duel
+campgrounds|duel
+concretepalace|duel
+cure|duel
+delirium|duel
+dismemberment|duel
+elder|duel
+furiousheights|duel
+fuse|duel
+hektik|duel
+houseofdecay|duel
+mcsarges|duel
+phrantic|duel
+refinery|duel
+silence|duel
+sinister|duel
+solarium|duel
+sorrow|duel
+theedge|duel
+theepicenter|duel
+toxicity|duel
+useandabuse|duel
+verticalvengeance|duel
+wicked|duel

@@ -159,7 +159,29 @@ foreach(DATA_FILE ${BASEQL_DATA_FILES})
         COMMENT "Copying ${BASEQL}/${DATA_FILE}")
     list(APPEND BASEQL_DATA_OUTPUTS ${DATA_OUTPUT})
 
-    get_filename_component(DATA_SUBDIR ${DATA_FILE} DIRECTORY)
-    install(FILES ${BASEQL_DATA_DIR}/${DATA_FILE} DESTINATION ${BASEQL}/${DATA_SUBDIR})
+    if(NOT BUILD_GAME_QVMS)
+        get_filename_component(DATA_SUBDIR ${DATA_FILE} DIRECTORY)
+        install(FILES ${BASEQL_DATA_DIR}/${DATA_FILE} DESTINATION ${BASEQL}/${DATA_SUBDIR})
+    endif()
 endforeach()
 add_custom_target(baseql_data ALL DEPENDS ${BASEQL_DATA_OUTPUTS})
+
+# baseql.pk3 holds the QVMs and data files: what players and servers install.
+# Pure servers need it, because pure clients only load game code from pk3s.
+if(BUILD_GAME_QVMS)
+    set(BASEQL_OUTPUT_DIR ${CMAKE_BINARY_DIR}/$<CONFIG>/${BASEQL})
+    set(BASEQL_PK3 ${BASEQL_OUTPUT_DIR}/baseql.pk3)
+    set(BASEQL_QVMS vm/${CGAME_MODULE}.qvm vm/${GAME_MODULE}.qvm vm/${UI_MODULE}.qvm)
+    list(TRANSFORM BASEQL_QVMS PREPEND ${BASEQL_OUTPUT_DIR}/ OUTPUT_VARIABLE BASEQL_QVM_PATHS)
+    add_custom_command(
+        OUTPUT ${BASEQL_PK3}
+        COMMAND ${CMAKE_COMMAND} -E rm -f baseql.pk3
+        COMMAND ${CMAKE_COMMAND} -E tar cf baseql.pk3 --format=zip -- ${BASEQL_QVMS} ${BASEQL_DATA_FILES}
+        WORKING_DIRECTORY ${BASEQL_OUTPUT_DIR}
+        DEPENDS ${BASEQL_QVM_PATHS} ${BASEQL_DATA_OUTPUTS}
+        COMMENT "Packing ${BASEQL}/baseql.pk3"
+        VERBATIM)
+    add_custom_target(baseql_pk3 ALL DEPENDS ${BASEQL_PK3})
+    add_dependencies(baseql_pk3 baseql_data ${CGAME_MODULE}qvm_${BASEQL} ${GAME_MODULE}qvm_${BASEQL} ${UI_MODULE}qvm_${BASEQL})
+    install(FILES ${BASEQL_PK3} DESTINATION ${BASEQL})
+endif()

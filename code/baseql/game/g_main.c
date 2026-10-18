@@ -1104,16 +1104,16 @@ void ExitLevel (void) {
 	BotInterbreedEndMatch();
 
 	// if we are running a tournement map, kick the loser to spectator status,
-	// which will automatically grab the next spectator and restart
+	// which will automatically grab the next spectator
 	if ( g_gametype.integer == GT_TOURNAMENT  ) {
-		if ( !level.restarted ) {
-			RemoveTournamentLoser();
-			trap_SendConsoleCommand( EXEC_APPEND, "map_restart 0\n" );
-			level.restarted = qtrue;
-			level.changemap = NULL;
-			level.intermissiontime = 0;
+		if ( level.restarted ) {
+			return;
 		}
-		return;	
+		RemoveTournamentLoser();
+		level.restarted = qtrue;
+		// baseql: then go on to nextmap, as Quake Live moves to a new map after
+		// each duel. Without a map pool, the engine's default nextmap restarts
+		// this map, which is what vanilla always did.
 	}
 
 	trap_Cvar_VariableStringBuffer( "nextmap", nextmap, sizeof(nextmap) );

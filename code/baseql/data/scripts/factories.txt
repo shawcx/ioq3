@@ -17,7 +17,9 @@
     "basegt": "duel",
     "cvars": {
       "timelimit": "10",
-      "fraglimit": "0"
+      "fraglimit": "0",
+      "pmove_WaterSwimScale": "0.5",
+      "pmove_WaterWadeScale": "0.75"
     }
   },
   {
