@@ -5,7 +5,7 @@ long-range phase plan is `docs/quakelive-plan.md`. The user guides are
 `docs/baseql-duel.md` (setup), `docs/baseql-cvars.md`,
 `docs/baseql-factories.md` and `docs/baseql-ql-pak.md`.
 
-Updated 2026-10-17 at `5c19fc1b`, branch `baseql` (not pushed).
+Updated 2026-10-18 at `279ddbae`, branch `baseql` (not pushed).
 
 ## Goals
 
@@ -47,6 +47,9 @@ Constraints that shape every change (the plan's ground rules, in short):
 | Lag compensation | Hitscan weapons rewind the other players to what the shooter saw | `5c19fc1b` |
 | Match flow | Ready-up, timeouts, server pauses | `5c19fc1b` |
 | Hit feedback | Damage plums, hit beeps pitched by damage | `5c19fc1b` |
+| Forced models | Enemy and team models, Quake Live's bright skins with per-part colors | `279ddbae` |
+| Map vote | End-of-match vote between three pool maps | `279ddbae` |
+| Scoreboard | Quake 3's scoreboard where the HUD files have none; Quake Live shader keywords ioquake3 rejects are stripped | `279ddbae` |
 
 Tested end to end on one machine: a pure server, two clients, warmup, a match
 to the time limit, and the next pool map. The HUDs were checked with
@@ -59,10 +62,11 @@ were checked as described under Testing.
 ### Now: get the new build to both players
 
 The packages already handed out predate the HUD, its fonts, lag compensation,
-ready-up and timeouts, and hit feedback.
+ready-up and timeouts, hit feedback, forced models and the map vote.
 
 1. Each player rebuilds `quakelive.pk3`; it now carries the HUD scripts,
-   Quake Live's fonts and its hit beeps.
+   Quake Live's fonts, hit beeps and bright skins, and shaders without the
+   keywords that made some surfaces invisible.
 2. Rebuild the Linux binaries, now with `-DUSE_FREETYPE=ON`, and `baseql.pk3`
    (see Deployment), and copy the server's `baseql.pk3` to both players.
 3. Restart the server.
@@ -70,14 +74,26 @@ ready-up and timeouts, and hit feedback.
 
 ### Next for duels, in order
 
-1. **Forced enemy models and bright skins:** `cg_forceEnemyModel`-style cvars
-   with per-part colors.
-2. **End-of-match vote** between three pool maps, as Quake Live does.
-3. **VQL step and ramp jumps,** once their behavior is measured in Quake Live.
-4. **Armor:** confirm the Green Armor's value; Quake Live's absorb rules.
-5. **HUD polish:** any ownerdraws play-testing shows missing.
-6. **Lag compensation tuning,** once the friend's ping is known (see Lag
-   compensation below).
+Each of these waits on something only playing or measuring can give:
+
+1. **VQL step and chain jumps.** The QL server's defaults name them but not
+   what they do: `pmove_StepJump 1` with `pmove_StepJumpVelocity 48`,
+   `pmove_ChainJump 1` with `pmove_ChainJumpVelocity 110`, and
+   `pmove_JumpTimeDeltaMin 100`, `pmove_JumpVelocityMax 700`,
+   `pmove_JumpVelocityScaleAdd 0.4`, `pmove_JumpVelocityTimeThreshold 500`,
+   `pmove_JumpVelocityTimeThresholdOffset 0.6`, `pmove_CrouchStepJump 1`,
+   `pmove_AirSteps 1`, `pmove_AirStepFriction 0.03`. Ramp jumps are off in
+   VQL (`pmove_RampJump 0`). Implementing them needs measurements from the
+   Quake Live client (Windows), such as jump heights off a step and after
+   landing at different intervals.
+2. **Armor:** the Green Armor's amount isn't in the QL data (its bot data has
+   only the respawn time). In the QL client, picking it up with no armor
+   shows the amount; taking a hit of known damage shows the absorb rule.
+3. **HUD polish:** play-testing will show what's missing; so far the
+   scoreboard was (now Quake 3's). Quake Live's own scoreboard menus and its
+   end-of-match vote menu are the next step, see Later.
+4. **Lag compensation tuning,** once the friend's ping is known (see Lag
+   compensation below): `status` on the server shows it.
 
 ### Later
 
@@ -91,9 +107,10 @@ The plan's phases, with what's left:
   their entities (`team_dom_point`, `race_point`, `ammo_pack`).
 - **Phase 3, match management:** voting, admin and referee commands, stats and
   a stats feed, overtime, mercy limit, forfeit. Ready-up and timeouts are done.
-- **Phase 4, client and HUD:** the rest: weapon bar, team overlay, medals,
-  visibility options, crosshair hit color, spectator tools, scoreboards, Hor+
-  FOV.
+- **Phase 4, client and HUD:** the rest: Quake Live's scoreboard menus
+  (`ingame_scoreboard_*.menu`, `end_scoreboard_*.menu`, which include its
+  vote menu with the `CG_VOTE*` ownerdraws), weapon bar, team overlay, medals,
+  visibility options, crosshair hit color, spectator tools, Hor+ FOV.
 - **Phase 5, engine:** mouse options, renderer controls, demo seeking, server
   browser filters.
 - **Phase 6, compatibility and bots:** Quake Live demos; bots that know the HMG
@@ -149,9 +166,10 @@ sets `nextmap` to a random other entry on every map load.
 `duel.cfg` selects the duel factory and `mappool_duel.txt` (Quake Live's 26
 duel maps), a 10 second warmup once both players have typed `readyup`, three
 60 second timeouts per player, `bot_enable 0` and `sv_fps 40`. At the end of a
-duel, `ExitLevel` sends the loser back to the queue as vanilla does, then goes
-on to `nextmap` instead of restarting the same map (`game/g_main.c`). Without a
-map pool, `nextmap` restarts the map, so vanilla behavior is unchanged.
+duel, players vote for the next map (see End-of-match vote); `ExitLevel` sends
+the loser back to the queue as vanilla does, then goes on to `nextmap` instead
+of restarting the same map (`game/g_main.c`). Without a map pool, there's no
+vote and `nextmap` restarts the map, so vanilla behavior is unchanged.
 
 ### Weapons and items
 
@@ -305,6 +323,50 @@ Quake Live's own scripts rather than recreating them.
   in `s.time` and the means of death in `eventParm`, which `cg_damagePlum`
   filters by weapon.
 
+### Forced models
+
+- `CG_NewClientInfo` decides per player whether `cg_forceEnemyModel` or
+  `cg_forceTeamModel` applies (`CG_ForcedModelSide`): outside team games
+  everyone but the local player is an enemy; in team games it goes by the
+  local player's team, read from their configstring since their own info may
+  not be parsed yet, and spectators force neither. A change of the local
+  player's team, or of either cvar, rebuilds every client info.
+- A forced model is loaded at once rather than deferred to the scoreboard
+  (`cg_deferPlayers`); all its players share it, so it loads once.
+- Its skin is looked up as `<part>_<skin>.skin` first, also in team games,
+  where vanilla would substitute the team skin. Quake Live's model icons are
+  PNGs, which the icon lookup didn't try; without an icon the model failed to
+  register and fell back to Sarge.
+- `CG_Player` sets each part's `shaderRGBA` from the cvars (white for players
+  who aren't forced). Quake Live's bright shaders tint the masked part of
+  the texture with it (`rgbGen entity` behind `alphaFunc GE128`).
+
+### End-of-match vote
+
+- `BeginIntermission` calls `G_StartMapVote` (`g_match.c`), which takes up to
+  three random map pool entries (`G_PickMapPoolEntries` in `g_factory.c`,
+  which reads the pool and factories again after a `map_restart` restarted the
+  game module). `CS_MAPVOTE` (30) carries the end time and each map, factory
+  and vote count.
+- `vote <n>` during intermission goes to `Cmd_MapVote_f` before the
+  intermission's command filter, and the cgame's weapon keys send it.
+  `CheckIntermissionExit` hands over to `G_MapVoteOver`, then `G_EndMapVote`
+  sets `nextmap` to the winner's `set g_factory ...; map ...` before
+  `ExitLevel`.
+- The cgame draws its own vote panel under the scoreboard. Quake Live's
+  `endgamevote.menu` uses the same `vote <n>` command, so it can replace the
+  panel once the end scoreboard menus run.
+
+### Scoreboard and shaders
+
+- Quake Live's HUD files load no scoreboard menu, and Team Arena's cgame drew
+  nothing without one; `CG_DrawScoreboard` now falls back to Quake 3's
+  `CG_DrawOldScoreboard`.
+- ioquake3 rejects a shader with an unknown general keyword, and a rejected
+  shader has no stages, so it draws nothing. `make-ql-pak.py` leaves out the
+  seven Quake Live uses (`strip_unknown_keywords`); `novlcollapse` alone was
+  in 648 shaders, every bright skin and a number of map surfaces among them.
+
 ## Testing
 
 There's no test suite. Every change has to build cleanly as native libraries
@@ -351,6 +413,12 @@ and QVMs; game code must also build with q3lcc.
   the 15 s pause. Screenshots show plums and the pause screen; a temporary
   cgame print showed beeps in all four steps. With `s_initsound 0` no sounds
   register, so beeps fall back; use `s_volume 0` instead.
+- **Forced models:** for a close look, temporarily let the forced model apply
+  to the local player and use `cg_thirdPerson 1`; change the color cvars
+  live. In a bot duel, a spectator following one bot sees the other.
+- **Map vote:** the bot duel with a spectator whose cfg keeps pressing
+  `weapon 2`; the test `quakelive.pk3` needs at least three pool maps besides
+  the current one. The log shows `MapVote:` and the next map loading.
 - **Vanilla baseline:** with `BUILD_BASEQL=OFF`, `baseq3` and `missionpack`
   must build and behave as before.
 
@@ -441,6 +509,10 @@ Things that cost time once:
 - `addbot` sent before the map finishes loading is silently ignored.
 - In a duel, the first client to connect takes a player slot; a test
   spectator should connect after the bots and type `team spectator`.
+- A model that fails to register (a missing skin or icon) silently falls back
+  to Sarge while the client info keeps the requested names; check the model
+  actually drawn, not the names.
+- `cg_deferPlayers` keeps new models from loading until the scoreboard opens.
 - Pure servers compare pk3s by checksum, so every player needs the server's
   exact `baseql.pk3` and a `quakelive.pk3` built from the same Quake Live
   data.
