@@ -1211,6 +1211,21 @@ char *CG_GetMenuBuffer(const char *filename) {
 // new hud stuff ( mission pack )
 // ==============================
 //
+
+// baseql: Quake Live's TrueType fonts, by itemDef "font" (FONT_*)
+static const char *cg_fontFiles[] = {
+	"fonts/handelgothic.ttf",		// FONT_DEFAULT
+	"fonts/notosans-regular.ttf",	// FONT_SANS
+	"fonts/droidsansmono.ttf"		// FONT_MONO
+};
+
+// baseql: the HUD's small, normal and big font sizes, and the other faces'
+// fonts at those sizes; FONT_DEFAULT's are cgDC.Assets' smallFont, textFont
+// and bigFont
+static int			cg_fontSizes[3] = { 16, 24, 48 };
+static fontInfo_t	cg_itemFonts[ARRAY_LEN( cg_fontFiles )][3];
+static qboolean		cg_itemFontsRegistered[ARRAY_LEN( cg_fontFiles )];
+
 qboolean CG_Asset_Parse(int handle) {
 	pc_token_t token;
 	const char *tempStr;
@@ -1235,6 +1250,7 @@ qboolean CG_Asset_Parse(int handle) {
 			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
+			cg_fontSizes[1] = pointSize;
 			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.textFont);
 			continue;
 		}
@@ -1245,6 +1261,7 @@ qboolean CG_Asset_Parse(int handle) {
 			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
+			cg_fontSizes[0] = pointSize;
 			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.smallFont);
 			continue;
 		}
@@ -1255,6 +1272,7 @@ qboolean CG_Asset_Parse(int handle) {
 			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
+			cg_fontSizes[2] = pointSize;
 			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.bigFont);
 			continue;
 		}
@@ -1741,7 +1759,9 @@ static void CG_RunCinematicFrame(int handle) {
 =================
 CG_RegisterFont
 
-baseql: the engine only has fonts pre-rendered at certain sizes
+baseql: HUD text draws in Quake Live's Handel Gothic when the engine renders
+TrueType fonts (USE_FREETYPE) and quakelive.pk3 has it. Otherwise it draws in
+Team Arena's font, which is pre-rendered at certain sizes
 (fonts/fontImage_<size>.dat). Quake Live's HUDs ask for sizes Team Arena
 doesn't have, so use the nearest size there is; the engine scales its glyphs
 to match.
@@ -1751,6 +1771,12 @@ static void CG_RegisterFont( const char *fontName, int pointSize, fontInfo_t *fo
 	static const int	sizes[] = { 12, 16, 20, 24, 32, 48 };
 	fileHandle_t		f;
 	int					i, best, size;
+
+	memset( font, 0, sizeof( *font ) );
+	trap_R_RegisterFont( cg_fontFiles[FONT_DEFAULT], pointSize, font );
+	if ( font->glyphScale ) {
+		return;
+	}
 
 	best = pointSize;
 	trap_FS_FOpenFile( va( "fonts/fontImage_%i.dat", pointSize ), &f, FS_READ );
@@ -1774,6 +1800,54 @@ static void CG_RegisterFont( const char *fontName, int pointSize, fontInfo_t *fo
 		}
 	}
 	trap_R_RegisterFont( fontName, best, font );
+}
+
+/*
+=================
+CG_RegisterItemFont
+
+baseql: registers the face an itemDef "font" asks for at the HUD's three
+sizes. Text in a face the engine can't render draws in FONT_DEFAULT's.
+=================
+*/
+static void CG_RegisterItemFont( int font ) {
+	int i;
+
+	if ( font <= FONT_DEFAULT || font >= ARRAY_LEN( cg_fontFiles ) || cg_itemFontsRegistered[font] ) {
+		return;
+	}
+	cg_itemFontsRegistered[font] = qtrue;
+	for ( i = 0 ; i < 3 ; i++ ) {
+		trap_R_RegisterFont( cg_fontFiles[font], cg_fontSizes[i], &cg_itemFonts[font][i] );
+	}
+}
+
+/*
+=================
+CG_TextFont
+
+baseql: the font text at this scale draws with, in the face of the item being
+painted
+=================
+*/
+fontInfo_t *CG_TextFont( float scale ) {
+	fontInfo_t	*font;
+	int			size;
+
+	if ( scale <= cg_smallFont.value ) {
+		font = &cgDC.Assets.smallFont;
+		size = 0;
+	} else if ( scale > cg_bigFont.value ) {
+		font = &cgDC.Assets.bigFont;
+		size = 2;
+	} else {
+		font = &cgDC.Assets.textFont;
+		size = 1;
+	}
+	if ( cgDC.font > FONT_DEFAULT && cgDC.font < ARRAY_LEN( cg_fontFiles ) && cg_itemFonts[cgDC.font][size].glyphScale ) {
+		font = &cg_itemFonts[cgDC.font][size];
+	}
+	return font;
 }
 
 /*
@@ -1803,6 +1877,7 @@ void CG_LoadHudMenu( void ) {
 	cgDC.addRefEntityToScene = &trap_R_AddRefEntityToScene;
 	cgDC.renderScene = &trap_R_RenderScene;
 	cgDC.registerFont = &CG_RegisterFont;
+	cgDC.registerItemFont = &CG_RegisterItemFont;
 	cgDC.ownerDrawItem = &CG_OwnerDraw;
 	cgDC.getValue = &CG_GetValue;
 	cgDC.ownerDrawVisible = &CG_OwnerDrawVisible;
@@ -1839,6 +1914,10 @@ void CG_LoadHudMenu( void ) {
 	Init_Display(&cgDC);
 
 	Menu_Reset();
+
+	// baseql: a native cgame's statics can outlive the renderer's fonts
+	memset( cg_itemFonts, 0, sizeof( cg_itemFonts ) );
+	memset( cg_itemFontsRegistered, 0, sizeof( cg_itemFontsRegistered ) );
 
 	trap_Cvar_VariableStringBuffer("cg_hudFiles", buff, sizeof(buff));
 	hudSet = buff;

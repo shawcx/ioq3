@@ -249,7 +249,7 @@ typedef struct itemDef_s {
 	float special;								 // used for feeder id's etc.. diff per type
   int cursorPos;                 // cursor position in characters
 	void *typeData;								 // type specific data ptr's	
-	int font;										 // baseql: FONT_*, from Quake Live's HUDs; all use the same font
+	int font;										 // baseql: FONT_*, the face Quake Live's HUDs draw the item's text in
 } itemDef_t;
 
 typedef struct {
@@ -336,6 +336,7 @@ typedef struct {
   void (*addRefEntityToScene) (const refEntity_t *re );
   void (*renderScene) ( const refdef_t *fd );
   void (*registerFont) (const char *pFontname, int pointSize, fontInfo_t *font);
+  void (*registerItemFont) (int font);	// baseql: readies an itemDef "font" face; NULL draws all items in one
   void (*ownerDrawItem) (float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, float scale, vec4_t color, qhandle_t shader, int textStyle);
 	float (*getValue) (int ownerDraw);
 	qboolean (*ownerDrawVisible) (int flags);
@@ -373,6 +374,7 @@ typedef struct {
   float			xscale;
   float			bias;
   int				widescreen;	// baseql: WIDESCREEN_* of the menu being painted, for the drawing functions
+  int				font;		// baseql: FONT_* of the item being painted, for the drawing functions
   int				realTime;
   int				frameTime;
 	int				cursorx;

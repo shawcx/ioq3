@@ -50,12 +50,7 @@ int CG_Text_Width(const char *text, float scale, int limit) {
 	glyphInfo_t *glyph;
 	float useScale;
 	const char *s = text;
-	fontInfo_t *font = &cgDC.Assets.textFont;
-	if (scale <= cg_smallFont.value) {
-		font = &cgDC.Assets.smallFont;
-	} else if (scale > cg_bigFont.value) {
-		font = &cgDC.Assets.bigFont;
-	}
+	fontInfo_t *font = CG_TextFont(scale);
 	useScale = scale * font->glyphScale;
   out = 0;
   if (text) {
@@ -85,12 +80,7 @@ int CG_Text_Height(const char *text, float scale, int limit) {
 	glyphInfo_t *glyph;
 	float useScale;
 	const char *s = text;
-	fontInfo_t *font = &cgDC.Assets.textFont;
-	if (scale <= cg_smallFont.value) {
-		font = &cgDC.Assets.smallFont;
-	} else if (scale > cg_bigFont.value) {
-		font = &cgDC.Assets.bigFont;
-	}
+	fontInfo_t *font = CG_TextFont(scale);
 	useScale = scale * font->glyphScale;
   max = 0;
   if (text) {
@@ -129,12 +119,7 @@ void CG_Text_Paint(float x, float y, float scale, vec4_t color, const char *text
 	vec4_t newColor;
 	glyphInfo_t *glyph;
 	float useScale;
-	fontInfo_t *font = &cgDC.Assets.textFont;
-	if (scale <= cg_smallFont.value) {
-		font = &cgDC.Assets.smallFont;
-	} else if (scale > cg_bigFont.value) {
-		font = &cgDC.Assets.bigFont;
-	}
+	fontInfo_t *font = CG_TextFont(scale);
 	useScale = scale * font->glyphScale;
   if (text) {
 		const char *s = text;

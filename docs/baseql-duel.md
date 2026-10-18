@@ -4,13 +4,14 @@ How to set up baseql for 1v1 duels on Quake Live's maps, on your own server.
 
 ## What each player needs
 
-- This engine (`ioquake3` from this repo). Stock ioquake3 can't load Quake Live
+- This engine (`ioquake3` from this repo), built with `-DUSE_FREETYPE=ON` to
+  draw the HUD in Quake Live's fonts. Stock ioquake3 can't load Quake Live
   maps.
 - Quake III Arena: `baseq3/pak0.pk3` plus the 1.32 point release's
   `pak1.pk3`–`pak8.pk3`.
 - Team Arena, whose menus baseql uses: `missionpack/pak0.pk3` plus the
   point release's `pak1.pk3`–`pak3.pk3`.
-- Quake Live, to build `quakelive.pk3` (maps, HMG, Green Armor, HUD).
+- Quake Live, to build `quakelive.pk3` (maps, HMG, Green Armor, HUD, fonts).
 - `baseql.pk3`: the same file the server uses.
 
 The point release files are free: `quake3-latest-pk3s.zip` from
@@ -80,7 +81,6 @@ ioq3ded +set fs_basegame missionpack +set fs_game baseql \
 - Lag compensation for hitscan weapons, so leading targets depends on ping as
   in vanilla Quake 3.
 - Forced enemy models and bright skins.
-- Quake Live's HUD font: the HUD uses Team Arena's.
 - Quake Live's vote for the next map at the end of a match.
 - PQL movement, armor tiers and step/ramp jumps.
 - Green Armor gives 25 armor, an educated guess; Quake Live's value isn't

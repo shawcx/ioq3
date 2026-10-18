@@ -2,7 +2,7 @@
 """Build quakelive.pk3 for baseql from your own copy of Quake Live.
 
 Packs the Heavy Machinegun's and Green Armor's models, sounds and icons, Quake
-Live's HUDs, and Quake Live's maps with the textures, shaders, models and
+Live's HUDs and fonts, and Quake Live's maps with the textures, shaders, models and
 sounds they use, so baseql can load them. Files that Quake III Arena or Team
 Arena already provide are left out, so Quake 3's own maps keep their look.
 
@@ -49,6 +49,11 @@ HUD_FILES = ("ui/hud.txt", "ui/hud2.txt", "ui/hud3.txt", "ui/hud.menu", "ui/min_
 
 # art the HUD code loads by name, such as the gametype icons
 HUD_ASSET_PREFIXES = ("ui/assets/hud/",)
+
+# the fonts HUD text draws in (FONT_* in baseql's ui/menudef.h). Quake Live's
+# fallback font for other scripts, droidsansfallbackfull.ttf, is left out: the
+# engine draws only Latin-1.
+FONT_FILES = ("fonts/handelgothic.ttf", "fonts/notosans-regular.ttf", "fonts/droidsansmono.ttf")
 
 # Quake Live gametype names in arenas.txt, as the Team Arena menus spell them
 ARENA_TYPES = {"duel": "tourney", "tdm": "team", "har": "harvester"}
@@ -360,6 +365,9 @@ class Collector:
         for name in sorted(self.ql.names()):
             if name.startswith(HUD_ASSET_PREFIXES):
                 self.add_file(name)
+        for name in FONT_FILES:
+            if not self.add_file(name):
+                self.missing.add(name)
 
     def add_items(self):
         for name in sorted(self.ql.names()):
@@ -371,9 +379,11 @@ class Collector:
 
 
 def menu_assets(text):
-    """Image paths a menu script refers to: quoted names with a directory."""
+    """Image paths a menu script refers to: quoted names with a directory.
+    Font names ("fonts/font") aren't files; the HUD draws in FONT_FILES."""
     names = re.findall(r'"([^"\s]+/[^"\s]+)"', strip_comments(text))
-    return [n for n in names if not n.lower().endswith((".menu", ".txt", ".h", ".cfg", ".wav", ".ogg"))]
+    return [n for n in names if not n.lower().endswith((".menu", ".txt", ".h", ".cfg", ".wav", ".ogg"))
+            and not n.lower().startswith("fonts/")]
 
 
 def arena_files(arenas_text, maps):

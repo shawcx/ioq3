@@ -1,8 +1,8 @@
 # Quake Live content for baseql
 
 `code/baseql/tools/make-ql-pak.py` builds `quakelive.pk3` from your own copy of
-Quake Live: the Heavy Machinegun's model, sounds and icons, Quake Live's HUD,
-and Quake Live's 149 maps with the textures, shaders, models and sounds they
+Quake Live: the Heavy Machinegun's model, sounds and icons, Quake Live's HUD
+and fonts, and Quake Live's 149 maps with the textures, shaders, models and sounds they
 use. It needs your
 own copies of Quake III Arena and Team Arena (baseql's menus use Team Arena's
 data) and Quake Live.
@@ -45,6 +45,9 @@ needs the same pk3; the same Quake Live data gives the same files.
   `ui/assets/hud/` they use: `ui/hud.txt` loads the standard HUD, `ui/hud2.txt`
   the minimal one and `ui/hud3.txt` the competitive one. Pick one with
   `seta cg_hudFiles ui/hud3.txt`, then `loadhud`.
+- Quake Live's fonts, which the HUD's text draws in: `fonts/handelgothic.ttf`,
+  `notosans-regular.ttf` and `droidsansmono.ttf`. The engine renders them when
+  built with `-DUSE_FREETYPE=ON`.
 
 Files Quake 3 or Team Arena already have are left out, and so are Quake Live
 shader definitions for names Quake 3's maps use as plain images, so Quake 3's
@@ -60,8 +63,8 @@ ioquake3's renderers refuse, have those surfaces split. The HMG's model is one.
 - A few dozen referenced files exist in neither game, mostly editor textures;
   the script lists them. The engine warns about a few Quake Live shader
   keywords it doesn't know.
-- The HUD draws with Team Arena's font, at the nearest size it has, instead
-  of Quake Live's. HUD parts for gametypes baseql doesn't have yet (rounds,
-  Domination, race) draw nothing.
+- An engine built without FreeType draws the HUD in Team Arena's font, at
+  the nearest size it has. HUD parts for gametypes baseql doesn't have yet
+  (rounds, Domination, race) draw nothing.
 - Quake Live entities baseql doesn't have yet (Domination points, race
   checkpoints, ammo packs, advertisements) are ignored with a warning.

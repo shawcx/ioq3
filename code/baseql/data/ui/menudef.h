@@ -317,10 +317,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define WIDESCREEN_CENTER				2	// kept in proportion, centered
 #define WIDESCREEN_RIGHT				3	// kept in proportion, against the right edge
 
-// itemDef "font"
-#define FONT_DEFAULT					0
-#define FONT_SANS						1
-#define FONT_MONO						2
+// itemDef "font": the face the item's text draws in, from quakelive.pk3
+#define FONT_DEFAULT					0	// Handel Gothic, fonts/handelgothic.ttf
+#define FONT_SANS						1	// Noto Sans, fonts/notosans-regular.ttf
+#define FONT_MONO						2	// Droid Sans Mono, fonts/droidsansmono.ttf
 
 // ownerdrawflag bits Team Arena leaves free
 #define CG_SHOW_DOMINATION					0x00100000

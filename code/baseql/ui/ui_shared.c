@@ -4392,6 +4392,7 @@ void Menu_Paint(menuDef_t *menu, qboolean forcePaint) {
 	Window_Paint(&menu->window, menu->fadeAmount, menu->fadeClamp, menu->fadeCycle );
 
 	for (i = 0; i < menu->itemCount; i++) {
+		DC->font = menu->items[i]->font;	// baseql
 		Item_Paint(menu->items[i]);
 	}
 
@@ -4403,6 +4404,7 @@ void Menu_Paint(menuDef_t *menu, qboolean forcePaint) {
 	}
 
 	DC->widescreen = WIDESCREEN_STRETCH;
+	DC->font = FONT_DEFAULT;
 }
 
 /*
@@ -4788,7 +4790,13 @@ qboolean ItemParse_visible( itemDef_t *item, int handle ) {
 
 // baseql: Quake Live's "font FONT_*"
 qboolean ItemParse_font( itemDef_t *item, int handle ) {
-	return PC_Int_Parse(handle, &item->font);
+	if (!PC_Int_Parse(handle, &item->font)) {
+		return qfalse;
+	}
+	if (DC->registerItemFont) {
+		DC->registerItemFont(item->font);
+	}
+	return qtrue;
 }
 
 qboolean ItemParse_ownerdraw( itemDef_t *item, int handle ) {
