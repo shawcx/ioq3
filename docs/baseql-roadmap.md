@@ -5,7 +5,7 @@ long-range phase plan is `docs/quakelive-plan.md`. The user guides are
 `docs/baseql-duel.md` (setup), `docs/baseql-cvars.md`,
 `docs/baseql-factories.md` and `docs/baseql-ql-pak.md`.
 
-Updated 2026-10-17 at `17f24df5`, branch `baseql` (not pushed).
+Updated 2026-10-17 at `5c19fc1b`, branch `baseql` (not pushed).
 
 ## Goals
 
@@ -44,20 +44,25 @@ Constraints that shape every change (the plan's ground rules, in short):
 | Duels | Duel factory, duel map pool, `duel.cfg`, next map after each duel, `baseql.pk3` | `5f0b4bbd` |
 | HUD | Quake Live's standard, minimal and competitive HUDs | `126b4cb9` |
 | Fonts | Quake Live's TrueType fonts, through a vendored FreeType | `50f03b54`, `7ae2a63e`, `17f24df5` |
+| Lag compensation | Hitscan weapons rewind the other players to what the shooter saw | `5c19fc1b` |
+| Match flow | Ready-up, timeouts, server pauses | `5c19fc1b` |
+| Hit feedback | Damage plums, hit beeps pitched by damage | `5c19fc1b` |
 
 Tested end to end on one machine: a pure server, two clients, warmup, a match
 to the time limit, and the next pool map. The HUDs were checked with
 screenshots at 1280×720; the fonts at 640×480, 1280×720 and 2560×1440, on both
-renderers.
+renderers. Lag compensation, ready-up, timeouts, pauses, plums and hit beeps
+were checked as described under Testing.
 
 ## Roadmap
 
-### Now: get the HUD build to both players
+### Now: get the new build to both players
 
-The packages already handed out predate the HUD and its fonts.
+The packages already handed out predate the HUD, its fonts, lag compensation,
+ready-up and timeouts, and hit feedback.
 
-1. Each player rebuilds `quakelive.pk3`; it now carries the HUD scripts and
-   Quake Live's fonts.
+1. Each player rebuilds `quakelive.pk3`; it now carries the HUD scripts,
+   Quake Live's fonts and its hit beeps.
 2. Rebuild the Linux binaries, now with `-DUSE_FREETYPE=ON`, and `baseql.pk3`
    (see Deployment), and copy the server's `baseql.pk3` to both players.
 3. Restart the server.
@@ -65,19 +70,14 @@ The packages already handed out predate the HUD and its fonts.
 
 ### Next for duels, in order
 
-1. **Lag compensation**, if the friend plays over the internet (the planned
-   port forward suggests so): server-side rewind for hitscan weapons, in the
-   style of Unlagged (GPL-2), inside the game module. Test with the
-   lagged-client method under Testing.
-2. **Ready-up and timeouts:** `g_warmupReadyPercentage`, a ready command,
-   pause and unpause.
-3. **Forced enemy models and bright skins:** `cg_forceEnemyModel`-style cvars
+1. **Forced enemy models and bright skins:** `cg_forceEnemyModel`-style cvars
    with per-part colors.
-4. **Hit feedback:** a hit beep pitched by damage, damage plums.
-5. **End-of-match vote** between three pool maps, as Quake Live does.
-6. **VQL step and ramp jumps,** once their behavior is measured in Quake Live.
-7. **Armor:** confirm the Green Armor's value; Quake Live's absorb rules.
-8. **HUD polish:** any ownerdraws play-testing shows missing.
+2. **End-of-match vote** between three pool maps, as Quake Live does.
+3. **VQL step and ramp jumps,** once their behavior is measured in Quake Live.
+4. **Armor:** confirm the Green Armor's value; Quake Live's absorb rules.
+5. **HUD polish:** any ownerdraws play-testing shows missing.
+6. **Lag compensation tuning,** once the friend's ping is known (see Lag
+   compensation below).
 
 ### Later
 
@@ -90,9 +90,10 @@ The plan's phases, with what's left:
   Attack & Defend, Domination, Red Rover, Race. Quake Live's maps already have
   their entities (`team_dom_point`, `race_point`, `ammo_pack`).
 - **Phase 3, match management:** voting, admin and referee commands, stats and
-  a stats feed.
+  a stats feed, overtime, mercy limit, forfeit. Ready-up and timeouts are done.
 - **Phase 4, client and HUD:** the rest: weapon bar, team overlay, medals,
-  visibility options, spectator tools, scoreboards, Hor+ FOV.
+  visibility options, crosshair hit color, spectator tools, scoreboards, Hor+
+  FOV.
 - **Phase 5, engine:** mouse options, renderer controls, demo seeking, server
   browser filters.
 - **Phase 6, compatibility and bots:** Quake Live demos; bots that know the HMG
@@ -146,7 +147,8 @@ sets `nextmap` to a random other entry on every map load.
 ### Duel flow
 
 `duel.cfg` selects the duel factory and `mappool_duel.txt` (Quake Live's 26
-duel maps), a 10 second warmup, `bot_enable 0` and `sv_fps 40`. At the end of a
+duel maps), a 10 second warmup once both players have typed `readyup`, three
+60 second timeouts per player, `bot_enable 0` and `sv_fps 40`. At the end of a
 duel, `ExitLevel` sends the loser back to the queue as vanilla does, then goes
 on to `nextmap` instead of restarting the same map (`game/g_main.c`). Without a
 map pool, `nextmap` restarts the map, so vanilla behavior is unchanged.
@@ -237,6 +239,72 @@ Quake Live's own scripts rather than recreating them.
 - HUD choice: `cg_hudFiles ui/hud.txt` (standard), `ui/hud2.txt` (minimal),
   `ui/hud3.txt` (competitive), applied with `loadhud`.
 
+### Lag compensation
+
+`code/baseql/game/g_lagcomp.c`, after Quake Live's `g_lagHaxMs` and
+`g_lagHaxHistory` (`docs/baseql-cvars.md`). The design is Unlagged's
+(backward reconciliation), written afresh and kept small.
+
+- A client draws the other players between its last two snapshots, at the
+  time it sends in each command (`usercmd_t serverTime`, the same as the
+  cgame's `cg.time`). With `cg_smoothClients 0`, the default, it interpolates
+  between snapshot positions and never extrapolates.
+- At the end of every server frame, `G_StoreLagFrames` records each player's
+  snapped origin (`s.pos.trBase`, what snapshots carry), bounds and teleport
+  bit, 32 frames deep. The client struct is cleared on spawn, so no frames
+  from before a respawn survive.
+- `FireWeapon` wraps the hitscan weapons, and `ClientThink_real` the
+  gauntlet check, in `G_RewindClients`/`G_RestoreClients`. The rewind goes
+  to the shooter's command time, at most `g_lagHaxMs` back and no further
+  than the oldest of `g_lagHaxHistory` frames, interpolating between the two
+  frames around it; across a teleport it takes the older frame, as clients
+  don't interpolate there. Only the other players move; the shooter is where
+  their own Pmove put them.
+- A paused `Pmove` doesn't set bounds, so `ClientThink_real` keeps the last
+  ones while frozen; otherwise frames stored during a pause would have empty
+  hitboxes.
+
+### Ready-up, timeouts and pauses
+
+`code/baseql/game/g_match.c`.
+
+- **Ready-up:** `CheckTournament` asks `G_ReadyToStart` before starting the
+  warmup countdown, in duels and in the other gametypes. Ready flags live in
+  `client->pers`, which a `map_restart` clears, so each match starts unready.
+  While waiting, `CS_READYUP` (28) holds the number needed and a `0`/`1` per
+  client, which the cgame turns into "Waiting for players to ready up" with
+  who isn't ready.
+- **Pause:** `level.pauseTime` marks a paused game; `CS_PAUSE` (29) tells
+  clients when it paused, when it resumes and who called it. Players get
+  `PM_FREEZE` (they can turn, not move or fire), can't respawn, and skip the
+  once-a-second timer actions. Each frame, `G_RunPause` moves every clock
+  forward by the frame's time: `level.startTime` (so the time limit waits),
+  every `nextthink`, the trajectory times of everything but players (missiles,
+  movers, dropped items hold still), and each player's powerups, respawn,
+  air, inactivity, reward and kill times.
+- **Clocks:** the server updates `CS_LEVEL_START_TIME` once, on resuming;
+  meanwhile the cgame's `CG_LevelTime` stands at the pause time, so the match
+  timer and the time limit warnings stop too. `G_LogPrintf`'s times count from
+  `level.startTime`, so log times stand still during a pause as well.
+- Resuming, after a timeout ends or by `timein`/`unpause`, runs a 3 second
+  countdown. A server `pause` during a timeout keeps the original pause time.
+
+### Hit feedback
+
+- **Damage:** `G_Damage` adds what an enemy takes (health and armor) to the
+  attacker's `persistant[PERS_DAMAGE_GIVEN]` (slot 15, modulo 32768, as
+  persistant values travel as 16-bit shorts), next to `PERS_HITS`. The cgame
+  turns the difference between snapshots into one of four beeps, in steps of
+  25. QL's beeps fall from about 660 Hz (`hit0`) to 460 Hz (`hit3`), so more
+  damage sounds lower.
+- **Plums:** damage to each player is summed per frame and attacker, with the
+  position the attacker saw (after any rewind), and sent at the end of the
+  frame as `EV_DAMAGEPLUM`, a temp entity for that attacker only
+  (`SVF_SINGLECLIENT`). Snapshots match that against `ps.clientNum`, so
+  spectators following the attacker get it too. The event carries the damage
+  in `s.time` and the means of death in `eventParm`, which `cg_damagePlum`
+  filters by weapon.
+
 ## Testing
 
 There's no test suite. Every change has to build cleanly as native libraries
@@ -264,6 +332,25 @@ and QVMs; game code must also build with q3lcc.
   `font FONT_SANS` or `FONT_MONO` on an item loose in `baseql/ui/` (with
   `sv_pure 0`) and point `cg_hudFiles` at it. A `quakelive.pk3` without
   `fonts/` checks the fallback.
+- **Lag compensation:** a `devmap` duel server with `g_debugLagComp 1`, one
+  client with `cl_packetdelay 60` firing the machinegun and one strafing. A
+  temporary cgame print of the other player's `lerpOrigin` at each `cg.time`
+  (gated on `cg_debugposition 2`) gives where the shooter saw the target;
+  the server log gives where it rewound the target to, for the same time.
+  Result: 68 shots, rewinds of 75 to 121 ms, rewound positions within 1.7
+  units of what the client drew (median 0), against 29 units (up to 41)
+  without the rewind. The target must be in the shooter's view, and spawns
+  are random, so it can take a second try.
+- **Ready-up and timeouts:** the same setup, the clients' cfgs typing
+  `readyup`, `timeout` and `timein`; the log shows the countdown waiting for
+  both, and the match clock standing still through the timeout.
+- **Pauses, plums and beeps:** two bots duel (they ready up by themselves)
+  while a client spectates with `follow 0` once the match has started (a
+  `map_restart` ends following). The server console sets `timelimit 1`,
+  then `pause` and `unpause`; the match ended 75 s after it started, 60 plus
+  the 15 s pause. Screenshots show plums and the pause screen; a temporary
+  cgame print showed beeps in all four steps. With `s_initsound 0` no sounds
+  register, so beeps fall back; use `s_volume 0` instead.
 - **Vanilla baseline:** with `BUILD_BASEQL=OFF`, `baseq3` and `missionpack`
   must build and behave as before.
 
@@ -305,6 +392,10 @@ Not verified yet:
 - The competitive HUD's vertical layout against real Quake Live.
 - Chat may show twice, in the HUD and the console notify area;
   `con_notifytime 0` hides the latter.
+- Lag compensation over a real internet link, and how the hit beeps sound
+  (the tests checked which beep plays, with the volume at 0).
+- Damage plums' size and placement in play; they grow with distance beyond
+  300 units to stay readable.
 
 Guesses to replace with Quake Live's real values when a source turns up:
 
@@ -314,6 +405,9 @@ Guesses to replace with Quake Live's real values when a source turns up:
   `FONT_SANS` on most text.
 - `g_respawn_delay_max` as a forced respawn time; `pmove_WaterWadeScale`
   applying to wading.
+- What `g_lagHaxMs` and `g_lagHaxHistory` do exactly (read as the most
+  milliseconds rewound, and frames of history); what `g_damagePlums` 1 and 2
+  mean; the damage steps of QL's hit beeps (25 here) and its plums' colors.
 - Quake Live's remaining `pmove_*` cvars (air control, step, ramp and chain
   jumps, crouch slide) aren't implemented for lack of a description.
 
@@ -342,6 +436,11 @@ Things that cost time once:
   `cmake/platforms/macos.cmake`), so Homebrew's arm64-only libraries don't
   link; that's why FreeType is vendored.
 - `misc/update-libs.sh` needs GNU `find`; run it on Linux.
+- `duel.cfg` sets `bot_enable 0`, and it wins over a `+set bot_enable 1` on
+  the command line; for bot tests, set the warmup cvars directly instead.
+- `addbot` sent before the map finishes loading is silently ignored.
+- In a duel, the first client to connect takes a player slot; a test
+  spectator should connect after the bots and type `team spectator`.
 - Pure servers compare pk3s by checksum, so every player needs the server's
   exact `baseql.pk3` and a `quakelive.pk3` built from the same Quake Live
   data.
