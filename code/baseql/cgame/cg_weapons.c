@@ -600,9 +600,9 @@ static void CG_GrenadeTrail( centity_t *ent, const weaponInfo_t *wi ) {
 =================
 CG_AssetPath, CG_RegisterAssetShader, CG_RegisterAssetSound
 
-baseql: Quake Live's Heavy Machinegun assets are only there with quakelive.pk3,
-which make-ql-pak.py builds from the player's own copy of Quake Live. Without
-them, the machinegun's stand in.
+baseql: Quake Live's Heavy Machinegun and Green Armor assets are only there with
+quakelive.pk3, which make-ql-pak.py builds from the player's own copy of Quake
+Live. Without them, the machinegun's and yellow armor's stand in.
 =================
 */
 static const char *cg_assetFallbacks[][2] = {
@@ -610,6 +610,8 @@ static const char *cg_assetFallbacks[][2] = {
 	{ "models/powerups/ammo/hmgam.md3",		"models/powerups/ammo/machinegunam.md3" },
 	{ "icons/weap_hmg",						"icons/iconw_machinegun" },
 	{ "icons/ammo_hmg",						"icons/icona_machinegun" },
+	{ "models/powerups/armor/armor_grn.md3",	"models/powerups/armor/armor_yel.md3" },
+	{ "icons/iconr_green",					"icons/iconr_yellow" },
 };
 
 static const char *CG_AssetFallback( const char *path ) {

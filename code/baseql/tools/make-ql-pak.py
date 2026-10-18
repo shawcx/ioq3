@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """Build quakelive.pk3 for baseql from your own copy of Quake Live.
 
-Packs the Heavy Machinegun's model, sounds and icons, and Quake Live's maps
-with the textures, shaders, models and sounds they use, so baseql can load
-them. Files that Quake III Arena or Team Arena already provide are left out,
-so Quake 3's own maps keep their look.
+Packs the Heavy Machinegun's and Green Armor's models, sounds and icons, and
+Quake Live's maps with the textures, shaders, models and sounds they use, so
+baseql can load them. Files that Quake III Arena or Team Arena already provide
+are left out, so Quake 3's own maps keep their look.
 
-You need your own copies of Quake III Arena (with Team Arena for baseql's
-menus) and Quake Live. The pk3 this writes contains Quake Live's copyrighted
+You need your own copies of Quake III Arena, Team Arena (which baseql's menus
+use) and Quake Live. The pk3 this writes contains Quake Live's copyrighted
 assets: it's for your own use, don't redistribute it.
 
 Put the result in your baseql directory. Everyone on a pure server needs the
-same pk3; the same Quake Live data gives the same files.
+same pk3; the same Quake Live, Quake 3 and Team Arena data gives the same files.
 
 usage: make-ql-pak.py --quakelive QL/baseq3 --quake3 Q3/baseq3
-                      [--missionpack Q3/missionpack] [--maps all|a,b,c]
+                      --missionpack Q3/missionpack [--maps all|a,b,c]
                       [--output quakelive.pk3] [--list-maps]
 """
 
@@ -30,13 +30,16 @@ PK3_DATE = (2016, 6, 3, 0, 0, 0)
 
 IMAGE_EXTENSIONS = (".tga", ".jpg", ".png")
 
-# the Heavy Machinegun's files, by directory or name
-HMG_PREFIXES = (
+# files of the Quake Live items baseql has (Heavy Machinegun, Green Armor), by
+# directory or name
+ITEM_PREFIXES = (
     "models/weapons3/hmg/",
     "sound/weapons/hmg/",
     "models/powerups/ammo/hmgam",
     "icons/weap_hmg.",
     "icons/ammo_hmg.",
+    "models/powerups/armor/armor_grn",
+    "icons/iconr_green.",
 )
 
 # Quake Live gametype names in arenas.txt, as the Team Arena menus spell them
@@ -339,9 +342,9 @@ class Collector:
         for sound in sounds:
             self.add_sound(sound)
 
-    def add_hmg(self):
+    def add_items(self):
         for name in sorted(self.ql.names()):
-            if name.startswith(HMG_PREFIXES):
+            if name.startswith(ITEM_PREFIXES):
                 if name.endswith(".md3"):
                     self.add_model(name)
                 else:
@@ -396,16 +399,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--quakelive", required=True, help="Quake Live's baseq3 directory, with pak00.pk3")
     parser.add_argument("--quake3", required=True, help="Quake III Arena's baseq3 directory, with pak0.pk3")
-    parser.add_argument("--missionpack", help="Team Arena's missionpack directory, with pak0.pk3")
+    parser.add_argument("--missionpack", required=True, help="Team Arena's missionpack directory, with pak0.pk3")
     parser.add_argument("--maps", default="all", help='"all" (default) or a comma-separated list')
     parser.add_argument("--output", default="quakelive.pk3")
     parser.add_argument("--list-maps", action="store_true", help="list Quake Live's maps and exit")
     args = parser.parse_args()
 
     ql = Pak([require_pk3(args.quakelive, "pak00.pk3", "Quake Live")])
-    base_pk3s = [require_pk3(args.quake3, "pak0.pk3", "Quake III Arena")] + find_pk3s(args.quake3)
-    if args.missionpack:
-        base_pk3s += [require_pk3(args.missionpack, "pak0.pk3", "Team Arena")] + find_pk3s(args.missionpack)
+    # only the retail paks, so that everyone builds the same pk3 whatever else
+    # they have installed (ioquake3 needs all nine of Quake 3's anyway)
+    base_pk3s = [require_pk3(args.quake3, "pak%d.pk3" % i, "Quake III Arena with its 1.32 point release")
+                 for i in range(9)]
+    base_pk3s.append(require_pk3(args.missionpack, "pak0.pk3", "Team Arena"))
     base = Pak(base_pk3s)
 
     available = sorted(n[5:-4] for n in ql.names() if re.match(r"maps/[^/]+\.bsp$", n))
@@ -429,7 +434,7 @@ def main():
         return shaders
 
     collector = Collector(ql, base, all_shaders(ql), all_shaders(base))
-    collector.add_hmg()
+    collector.add_items()
     for name in maps:
         if "maps/%s.bsp" % name in base:
             continue            # Quake 3's own map of the same name wins

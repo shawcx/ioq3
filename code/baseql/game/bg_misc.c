@@ -951,6 +951,26 @@ Only in One Flag CTF games
 /* sounds */ ""
 	},
 
+	// baseql: Quake Live's Green Armor, on many of its duel maps. Its model and
+	// icon come from quakelive.pk3; without it the cgame uses the yellow armor's.
+	// Its armor value isn't documented; 25 is Quake 2's jacket armor, whose
+	// classname Quake Live reused.
+/*QUAKED item_armor_jacket (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+*/
+	{
+		"item_armor_jacket",
+		"sound/misc/ar2_pkup.wav",
+        { "models/powerups/armor/armor_grn.md3",
+		NULL, NULL, NULL},
+/* icon */		"icons/iconr_green",
+/* pickup */	"Green Armor",
+		25,
+		IT_ARMOR,
+		0,
+/* precache */ "",
+/* sounds */ ""
+	},
+
 	// end of list marker
 	{NULL}
 };
