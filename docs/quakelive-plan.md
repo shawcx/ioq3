@@ -4,7 +4,8 @@ Plan for bringing ioquake3 up to Quake Live (QL) feature parity as a separate
 mod, `baseql`, without giving up this fork's vanilla-compatible baseline.
 
 Written 2026-10-17 against `44378243` (in sync with `ioquake/ioq3` main, apart
-from one README-only upstream commit).
+from one README-only upstream commit). Status, the near-term roadmap and how
+the implemented parts work are in `docs/baseql-roadmap.md`.
 
 ## Starting point
 
@@ -49,6 +50,8 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
 - [x] Phase 4, first part: Quake Live's own HUD scripts run, from the player's
   Quake Live: widescreen anchoring, a font keyword, and the ownerdraws and
   flags its standard, minimal and competitive HUDs use for duels.
+- [x] Quake Live's TrueType fonts in the HUD, through a vendored FreeType; the
+  engine keys fonts by name and size and renders them at screen resolution.
 - [ ] Next in phase 1: the rest of movement (PQL air control, step/ramp/chain
   jumps, crouch slide) and armor, once their rules can be checked against a
   source; lag compensation; spawn selection.

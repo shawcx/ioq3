@@ -17,7 +17,7 @@ cmake --install build                                     # to CMAKE_INSTALL_PRE
 emcmake cmake -S . -B build -DCMAKE_BUILD_TYPE=Release    # web build (see README.md)
 ```
 
-- Linux needs `cmake` and `libsdl2-dev`. Other deps (zlib, jpeg, ogg/vorbis, opus, curl, openal-soft, SDL2) are vendored under `code/thirdparty/` and selected with `USE_INTERNAL_*` (logic in `cmake/libraries/`).
+- Linux needs `cmake` and `libsdl2-dev`. Other deps (zlib, jpeg, ogg/vorbis, opus, curl, openal-soft, SDL2, FreeType) are vendored under `code/thirdparty/` and selected with `USE_INTERNAL_*` (logic in `cmake/libraries/`).
 - Options are passed as `-D<NAME>=ON|OFF`; README.md lists them all. Common ones: `BUILD_CLIENT`, `BUILD_SERVER`, `BUILD_GAME_LIBRARIES`, `BUILD_GAME_QVMS`, `BUILD_RENDERER_OPENGL1/2`, `BUILD_STANDALONE`, `USE_RENDERER_DLOPEN`, `USE_HTTP`, `USE_VOIP`. For a fast engine-only build use `-DBUILD_GAME_QVMS=OFF`.
 - Outputs in `build/<config>/`: `ioquake3` (client), `ioq3ded` (dedicated server), `renderer_opengl{1,2}.so`, and `baseq3/` + `missionpack/` holding native game libraries and `vm/*.qvm`.
 - Running needs the original Q3 `pak0.pk3` in `baseq3/` (or `+set com_basegame <dir>` for standalone data).
@@ -52,7 +52,7 @@ Engine and game sources live in `code/`; build definitions live in `cmake/` (`cl
 - `q3_ui/` is the baseq3 menu UI. `ui/` is the Team Arena / missionpack script-driven UI.
 - `bg_*.c` (in `game/`) holds player movement and shared item data, compiled into both qagame and cgame so prediction matches the server.
 - The `missionpack` variant is the same source built with `MISSIONPACK` defined.
-- `baseql` is the Quake Live parity mod (plan: `docs/quakelive-plan.md`). It has its own copy of the game sources in `code/baseql/{game,cgame,ui}`, always built with `MISSIONPACK`, via `cmake/baseql.cmake` when `-DBUILD_BASEQL=ON`. Make baseql changes there, never in the upstream `game/`, `cgame/` or `ui/` directories.
+- `baseql` is the Quake Live parity mod (plan: `docs/quakelive-plan.md`; status, roadmap and design: `docs/baseql-roadmap.md`). It has its own copy of the game sources in `code/baseql/{game,cgame,ui}`, always built with `MISSIONPACK`, via `cmake/baseql.cmake` when `-DBUILD_BASEQL=ON` (add `-DUSE_FREETYPE=ON` for Quake Live's fonts). Make baseql changes there, never in the upstream `game/`, `cgame/` or `ui/` directories.
 
 Each module is built two ways:
 1. **Native shared library**: `*_syscalls.c` provides `dllEntry` + `syscall` function pointer.
