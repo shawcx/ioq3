@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "cg_local.h"
 #ifdef MISSIONPACK
-#include "../../../ui/menudef.h"
+#include "../data/ui/menudef.h"
 
 typedef struct {
 	const char *order;
@@ -1039,6 +1039,7 @@ static void CG_ServerCommand( void ) {
 		trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
 		Q_strncpyz( text, CG_Argv(1), MAX_SAY_TEXT );
 		CG_RemoveChatEscapeChar( text );
+		CG_AddToNewChat( text );
 		CG_Printf( "%s\n", text );
 		return;
 	}
@@ -1048,6 +1049,7 @@ static void CG_ServerCommand( void ) {
 		Q_strncpyz( text, CG_Argv(1), MAX_SAY_TEXT );
 		CG_RemoveChatEscapeChar( text );
 		CG_AddToTeamChat( text );
+		CG_AddToNewChat( text );
 		CG_Printf( "%s\n", text );
 		return;
 	}

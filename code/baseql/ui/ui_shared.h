@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "../../renderercommon/tr_types.h"
 #include "../../client/keycodes.h"
 
-#include "../../../ui/menudef.h"
+#include "../data/ui/menudef.h"
 
 #define MAX_MENUNAME 32
 #define MAX_ITEMTEXT 64
@@ -249,6 +249,7 @@ typedef struct itemDef_s {
 	float special;								 // used for feeder id's etc.. diff per type
   int cursorPos;                 // cursor position in characters
 	void *typeData;								 // type specific data ptr's	
+	int font;										 // baseql: FONT_*, from Quake Live's HUDs; all use the same font
 } itemDef_t;
 
 typedef struct {
@@ -269,6 +270,7 @@ typedef struct {
   vec4_t focusColor;								// focus color for items
   vec4_t disableColor;							// focus color for items
   itemDef_t *items[MAX_MENUITEMS];	// items this menu contains   
+  int widescreen;									// baseql: WIDESCREEN_*, from Quake Live's HUDs
 } menuDef_t;
 
 typedef struct {
@@ -370,6 +372,7 @@ typedef struct {
   float			yscale;
   float			xscale;
   float			bias;
+  int				widescreen;	// baseql: WIDESCREEN_* of the menu being painted, for the drawing functions
   int				realTime;
   int				frameTime;
 	int				cursorx;

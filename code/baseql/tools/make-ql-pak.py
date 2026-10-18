@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Build quakelive.pk3 for baseql from your own copy of Quake Live.
 
-Packs the Heavy Machinegun's and Green Armor's models, sounds and icons, and
-Quake Live's maps with the textures, shaders, models and sounds they use, so
-baseql can load them. Files that Quake III Arena or Team Arena already provide
-are left out, so Quake 3's own maps keep their look.
+Packs the Heavy Machinegun's and Green Armor's models, sounds and icons, Quake
+Live's HUDs, and Quake Live's maps with the textures, shaders, models and
+sounds they use, so baseql can load them. Files that Quake III Arena or Team
+Arena already provide are left out, so Quake 3's own maps keep their look.
 
 You need your own copies of Quake III Arena, Team Arena (which baseql's menus
 use) and Quake Live. The pk3 this writes contains Quake Live's copyrighted
@@ -41,6 +41,14 @@ ITEM_PREFIXES = (
     "models/powerups/armor/armor_grn",
     "icons/iconr_green.",
 )
+
+# Quake Live's HUDs (ui/hud.txt selects one, like cg_hudFiles). These replace
+# Team Arena's ui/hud.txt. ui/menudef.h stays baseql's own, which has
+# Quake Live's names with baseql's numbers.
+HUD_FILES = ("ui/hud.txt", "ui/hud2.txt", "ui/hud3.txt", "ui/hud.menu", "ui/min_hud.menu", "ui/comp_hud.menu")
+
+# art the HUD code loads by name, such as the gametype icons
+HUD_ASSET_PREFIXES = ("ui/assets/hud/",)
 
 # Quake Live gametype names in arenas.txt, as the Team Arena menus spell them
 ARENA_TYPES = {"duel": "tourney", "tdm": "team", "har": "harvester"}
@@ -342,6 +350,17 @@ class Collector:
         for sound in sounds:
             self.add_sound(sound)
 
+    def add_hud(self):
+        for name in HUD_FILES:
+            if name in self.ql:
+                self.files.add(self.ql.original_name(name))     # replaces Team Arena's
+                if name.endswith(".menu"):
+                    for image in menu_assets(self.ql.read(name).decode("latin-1")):
+                        self.add_shader(image)
+        for name in sorted(self.ql.names()):
+            if name.startswith(HUD_ASSET_PREFIXES):
+                self.add_file(name)
+
     def add_items(self):
         for name in sorted(self.ql.names()):
             if name.startswith(ITEM_PREFIXES):
@@ -349,6 +368,12 @@ class Collector:
                     self.add_model(name)
                 else:
                     self.add_file(name)
+
+
+def menu_assets(text):
+    """Image paths a menu script refers to: quoted names with a directory."""
+    names = re.findall(r'"([^"\s]+/[^"\s]+)"', strip_comments(text))
+    return [n for n in names if not n.lower().endswith((".menu", ".txt", ".h", ".cfg", ".wav", ".ogg"))]
 
 
 def arena_files(arenas_text, maps):
@@ -435,6 +460,7 @@ def main():
 
     collector = Collector(ql, base, all_shaders(ql), all_shaders(base))
     collector.add_items()
+    collector.add_hud()
     for name in maps:
         if "maps/%s.bsp" % name in base:
             continue            # Quake 3's own map of the same name wins

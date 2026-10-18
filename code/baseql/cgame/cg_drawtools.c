@@ -22,6 +22,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //
 // cg_drawtools.c -- helper functions called by cg_draw, cg_scoreboard, cg_info, etc
 #include "cg_local.h"
+#include "../ui/ui_shared.h"
+
+extern displayContextDef_t cgDC;
 
 /*
 ================
@@ -37,6 +40,29 @@ void CG_AdjustFrom640( float *x, float *y, float *w, float *h ) {
 		*x += 0.5 * ( cgs.glconfig.vidWidth - ( cgs.glconfig.vidHeight * 640 / 480 ) );
 	}
 #endif
+	// baseql: menus from Quake Live's HUDs keep their proportions on wide
+	// screens, against an edge or centered, instead of stretching
+	if ( cgDC.widescreen != WIDESCREEN_STRETCH && cgs.glconfig.vidWidth * 480 > cgs.glconfig.vidHeight * 640 ) {
+		float	offset;
+
+		switch ( cgDC.widescreen ) {
+		case WIDESCREEN_LEFT:
+			offset = 0;
+			break;
+		case WIDESCREEN_RIGHT:
+			offset = cgs.glconfig.vidWidth - 640 * cgs.screenYScale;
+			break;
+		default:
+			offset = 0.5f * ( cgs.glconfig.vidWidth - 640 * cgs.screenYScale );
+			break;
+		}
+		*x = *x * cgs.screenYScale + offset;
+		*y *= cgs.screenYScale;
+		*w *= cgs.screenYScale;
+		*h *= cgs.screenYScale;
+		return;
+	}
+
 	// scale for screen sizes
 	*x *= cgs.screenXScale;
 	*y *= cgs.screenYScale;

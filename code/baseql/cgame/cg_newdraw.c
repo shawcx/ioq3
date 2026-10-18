@@ -29,6 +29,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 extern displayContextDef_t cgDC;
 
+static qboolean CG_NewChatVisible( void );
+
 
 // set in CG_ParseTeamInfo
 
@@ -181,7 +183,26 @@ static void CG_DrawPlayerArmorIcon( rectDef_t *rect, qboolean draw2D ) {
 	}
 }
 
-static void CG_DrawPlayerArmorValue(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle) {
+/*
+==============
+CG_ValueTextX
+
+Team Arena's HUD centers a value in its rect. Quake Live's HUDs set an
+alignment and anchor the value at the rect's left edge instead, as aligned
+text items are.
+==============
+*/
+static float CG_ValueTextX( rectDef_t *rect, float width, int align ) {
+	if ( align == ITEM_ALIGN_CENTER ) {
+		return rect->x - width / 2;
+	}
+	if ( align == ITEM_ALIGN_RIGHT ) {
+		return rect->x - width;
+	}
+	return rect->x + ( rect->w - width ) / 2;
+}
+
+static void CG_DrawPlayerArmorValue(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle, int align) {
 	char	num[16];
 	int		value;
 	playerState_t	*ps;
@@ -197,7 +218,7 @@ static void CG_DrawPlayerArmorValue(rectDef_t *rect, float scale, vec4_t color, 
 	} else {
 		Com_sprintf (num, sizeof(num), "%i", value);
 		value = CG_Text_Width(num, scale, 0);
-		CG_Text_Paint(rect->x + (rect->w - value) / 2, rect->y + rect->h, scale, color, num, 0, 0, textStyle);
+		CG_Text_Paint(CG_ValueTextX(rect, value, align), rect->y + rect->h, scale, color, num, 0, 0, textStyle);
 	}
 }
 
@@ -226,7 +247,7 @@ static void CG_DrawPlayerAmmoIcon( rectDef_t *rect, qboolean draw2D ) {
 	}
 }
 
-static void CG_DrawPlayerAmmoValue(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle) {
+static void CG_DrawPlayerAmmoValue(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle, int align) {
 	char	num[16];
 	int value;
 	centity_t	*cent;
@@ -245,7 +266,7 @@ static void CG_DrawPlayerAmmoValue(rectDef_t *rect, float scale, vec4_t color, q
 			} else {
 				Com_sprintf (num, sizeof(num), "%i", value);
 				value = CG_Text_Width(num, scale, 0);
-				CG_Text_Paint(rect->x + (rect->w - value) / 2, rect->y + rect->h, scale, color, num, 0, 0, textStyle);
+				CG_Text_Paint(CG_ValueTextX(rect, value, align), rect->y + rect->h, scale, color, num, 0, 0, textStyle);
 			}
 		}
 	}
@@ -446,7 +467,9 @@ static void CG_DrawSelectedPlayerWeapon( rectDef_t *rect ) {
   }
 }
 
-static void CG_DrawPlayerScore( rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
+// Quake Live's competitive HUD sets the score on the top of its rect, as the
+// place scores it stacks with
+static void CG_DrawPlayerScore( rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle, int align ) {
   char num[16];
   int value = cg.snap->ps.persistant[PERS_SCORE];
 
@@ -457,7 +480,7 @@ static void CG_DrawPlayerScore( rectDef_t *rect, float scale, vec4_t color, qhan
 	} else {
 		Com_sprintf (num, sizeof(num), "%i", value);
 		value = CG_Text_Width(num, scale, 0);
-	  CG_Text_Paint(rect->x + (rect->w - value) / 2, rect->y + rect->h, scale, color, num, 0, 0, textStyle);
+	  CG_Text_Paint(CG_ValueTextX(rect, value, align), align == ITEM_ALIGN_LEFT ? rect->y + rect->h : rect->y, scale, color, num, 0, 0, textStyle);
 	}
 }
 
@@ -559,7 +582,7 @@ static void CG_DrawSelectedPlayerHead( rectDef_t *rect, qboolean draw2D, qboolea
 }
 
 
-static void CG_DrawPlayerHealth(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle ) {
+static void CG_DrawPlayerHealth(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle, int align ) {
 	playerState_t	*ps;
   int value;
 	char	num[16];
@@ -575,7 +598,7 @@ static void CG_DrawPlayerHealth(rectDef_t *rect, float scale, vec4_t color, qhan
 	} else {
 		Com_sprintf (num, sizeof(num), "%i", value);
 	  value = CG_Text_Width(num, scale, 0);
-	  CG_Text_Paint(rect->x + (rect->w - value) / 2, rect->y + rect->h, scale, color, num, 0, 0, textStyle);
+	  CG_Text_Paint(CG_ValueTextX(rect, value, align), rect->y + rect->h, scale, color, num, 0, 0, textStyle);
 	}
 }
 
@@ -985,6 +1008,41 @@ qboolean CG_YourTeamHasFlag(void) {
 // 
 qboolean CG_OwnerDrawVisible(int flags) {
 
+	// baseql: Quake Live's HUD flags
+	if (flags & CG_SHOW_IF_PLYR_IS_FIRST_PLACE) {
+		return !(cg.snap->ps.persistant[PERS_RANK] & ~RANK_TIED_FLAG);
+	}
+
+	if (flags & CG_SHOW_IF_PLYR_IS_NOT_FIRST_PLACE) {
+		return (cg.snap->ps.persistant[PERS_RANK] & ~RANK_TIED_FLAG) != 0;
+	}
+
+	if (flags & CG_SHOW_IF_RED_IS_FIRST_PLACE) {
+		return cgs.gametype >= GT_TEAM && cgs.scores1 >= cgs.scores2;
+	}
+
+	if (flags & CG_SHOW_IF_BLUE_IS_FIRST_PLACE) {
+		return cgs.gametype >= GT_TEAM && cgs.scores2 > cgs.scores1;
+	}
+
+	if (flags & CG_SHOW_IF_PLYR_IS_ON_RED) {
+		return cgs.gametype >= GT_TEAM && cg.snap->ps.persistant[PERS_TEAM] == TEAM_RED;
+	}
+
+	if (flags & CG_SHOW_IF_PLYR_IS_ON_BLUE) {
+		return cgs.gametype >= GT_TEAM && cg.snap->ps.persistant[PERS_TEAM] == TEAM_BLUE;
+	}
+
+	if (flags & CG_SHOW_IF_CHAT_VISIBLE) {
+		return CG_NewChatVisible();
+	}
+
+	// messages and notices from Quake Live's online services; Domination and
+	// round-based modes baseql doesn't have yet
+	if (flags & (CG_SHOW_IF_MSG_PRESENT | CG_SHOW_IF_NOTICE_PRESENT | CG_SHOW_DOMINATION | CG_SHOW_PLAYERS_REMAINING)) {
+		return qfalse;
+	}
+
 	if (flags & CG_SHOW_TEAMINFO) {
 		return (cg_currentSelectedPlayer.integer == numSortedTeamPlayers);
 	}
@@ -1136,15 +1194,311 @@ static void CG_DrawCapFragLimit(rectDef_t *rect, float scale, vec4_t color, qhan
 	CG_Text_Paint(rect->x, rect->y, scale, color, va("%2i", limit),0, 0, textStyle); 
 }
 
-static void CG_Draw1stPlace(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle) {
-	if (cgs.scores1 != SCORE_NOT_PRESENT) {
-		CG_Text_Paint(rect->x, rect->y, scale, color, va("%2i", cgs.scores1),0, 0, textStyle); 
+static void CG_DrawPlaceValue(rectDef_t *rect, int score, float scale, vec4_t color, int textStyle, int align) {
+	const char *num;
+
+	if (score == SCORE_NOT_PRESENT) {
+		return;
+	}
+	if (align == ITEM_ALIGN_LEFT) {
+		CG_Text_Paint(rect->x, rect->y, scale, color, va("%2i", score),0, 0, textStyle); 
+		return;
+	}
+	num = va("%i", score);
+	CG_Text_Paint(CG_ValueTextX(rect, CG_Text_Width(num, scale, 0), align), rect->y, scale, color, num, 0, 0, textStyle);
+}
+
+static void CG_Draw1stPlace(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle, int align) {
+	CG_DrawPlaceValue(rect, cgs.scores1, scale, color, textStyle, align);
+}
+
+static void CG_Draw2ndPlace(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle, int align) {
+	CG_DrawPlaceValue(rect, cgs.scores2, scale, color, textStyle, align);
+}
+
+/*
+=====================================================================
+
+baseql: ownerdraws for Quake Live's HUD scripts (ui/hud.menu and others)
+
+=====================================================================
+*/
+
+#define NEWCHAT_LINES		8
+#define NEWCHAT_TIME		8000	// msec a chat line stays up
+#define OBITUARY_LINES		4
+#define OBITUARY_TIME		5000
+
+typedef struct {
+	int		time;
+	char	text[MAX_SAY_TEXT];
+} newChatLine_t;
+
+typedef struct {
+	int		time;
+	int		attacker;			// ENTITYNUM_WORLD for no attacker
+	int		target;
+	int		mod;
+} obituaryLine_t;
+
+static newChatLine_t	newChat[NEWCHAT_LINES];
+static int				newChatCount;
+static obituaryLine_t	obituaries[OBITUARY_LINES];
+static int				obituaryCount;
+
+void CG_AddToNewChat( const char *text ) {
+	newChatLine_t	*line;
+
+	line = &newChat[newChatCount++ % NEWCHAT_LINES];
+	line->time = cg.time;
+	Q_strncpyz( line->text, text, sizeof( line->text ) );
+}
+
+void CG_AddObituary( int attacker, int target, int mod ) {
+	obituaryLine_t	*line;
+
+	line = &obituaries[obituaryCount++ % OBITUARY_LINES];
+	line->time = cg.time;
+	line->attacker = attacker;
+	line->target = target;
+	line->mod = mod;
+}
+
+static qboolean CG_NewChatVisible( void ) {
+	return newChatCount > 0 && cg.time - newChat[( newChatCount - 1 ) % NEWCHAT_LINES].time < NEWCHAT_TIME;
+}
+
+static void CG_SetColor4( vec4_t color, float r, float g, float b, float a ) {
+	color[0] = r;
+	color[1] = g;
+	color[2] = b;
+	color[3] = a;
+}
+
+// Quake Live's HUD texts sit on the top of their rect, aligned at its left edge
+static void CG_DrawAlignedText( rectDef_t *rect, const char *text, float scale, vec4_t color, int align, int textStyle ) {
+	float	x;
+
+	x = rect->x;
+	if ( align == ITEM_ALIGN_CENTER ) {
+		x -= CG_Text_Width( text, scale, 0 ) / 2;
+	} else if ( align == ITEM_ALIGN_RIGHT ) {
+		x -= CG_Text_Width( text, scale, 0 );
+	}
+	CG_Text_Paint( x, rect->y, scale, color, text, 0, 0, textStyle );
+}
+
+// draws the part of a picture covering frac of its width, from its left or right
+static void CG_DrawPicPart( rectDef_t *rect, float frac, qboolean fromRight, vec4_t color, qhandle_t shader ) {
+	float	x, y, w, h;
+
+	if ( !shader || frac <= 0 ) {
+		return;
+	}
+	if ( frac > 1 ) {
+		frac = 1;
+	}
+	x = rect->x;
+	y = rect->y;
+	w = rect->w * frac;
+	h = rect->h;
+	if ( fromRight ) {
+		x += rect->w - w;
+	}
+	CG_AdjustFrom640( &x, &y, &w, &h );
+	trap_R_SetColor( color );
+	trap_R_DrawStretchPic( x, y, w, h, fromRight ? 1 - frac : 0, 0, fromRight ? 1 : frac, 1, shader );
+	trap_R_SetColor( NULL );
+}
+
+// The bars' art is mirrored around the screen center, health on the left and
+// armor on the right; they drain towards the center.
+static void CG_DrawStatBar( rectDef_t *rect, int value, int base, qboolean fromRight, vec4_t color, qhandle_t shader ) {
+	CG_DrawPicPart( rect, ( value - base ) / 100.0f, fromRight, color, shader );
+}
+
+static void CG_DrawTeamColorized( rectDef_t *rect, vec4_t color, qhandle_t shader ) {
+	vec4_t	tinted;
+	int		team;
+
+	team = cg.snap->ps.persistant[PERS_TEAM];
+	if ( cgs.gametype >= GT_TEAM && team == TEAM_RED ) {
+		CG_SetColor4( tinted, 1.0f, 0.25f, 0.25f, color[3] );
+	} else if ( cgs.gametype >= GT_TEAM && team == TEAM_BLUE ) {
+		CG_SetColor4( tinted, 0.25f, 0.5f, 1.0f, color[3] );
+	} else {
+		Vector4Copy( color, tinted );
+	}
+	CG_DrawPicPart( rect, 1, qfalse, tinted, shader );
+}
+
+static void CG_DrawArmorTieredColorized( rectDef_t *rect, vec4_t color, qhandle_t shader ) {
+	vec4_t	tinted;
+	int		armor;
+
+	armor = cg.snap->ps.stats[STAT_ARMOR];
+	if ( armor > 100 ) {
+		CG_SetColor4( tinted, 1.0f, 0.25f, 0.25f, color[3] );
+	} else if ( armor > 50 ) {
+		CG_SetColor4( tinted, 1.0f, 1.0f, 0.25f, color[3] );
+	} else if ( armor > 0 ) {
+		CG_SetColor4( tinted, 0.25f, 1.0f, 0.25f, color[3] );
+	} else {
+		CG_SetColor4( tinted, 0.5f, 0.5f, 0.5f, color[3] );
+	}
+	CG_DrawPicPart( rect, 1, qfalse, tinted, shader );
+}
+
+static int CG_MatchTime( void ) {
+	int		msec;
+
+	msec = cg.time - cgs.levelStartTime;
+	return ( cg.warmup || msec < 0 ) ? 0 : msec;
+}
+
+static void CG_DrawLevelTimer( rectDef_t *rect, float scale, vec4_t color, int align, int textStyle ) {
+	int		seconds;
+
+	seconds = CG_MatchTime() / 1000;
+	CG_DrawAlignedText( rect, va( "%i:%02i", seconds / 60, seconds % 60 ), scale, color, align, textStyle );
+}
+
+static void CG_DrawOvertime( rectDef_t *rect, float scale, vec4_t color, int align, int textStyle ) {
+	if ( cgs.timelimit > 0 && !cg.intermissionStarted && CG_MatchTime() >= cgs.timelimit * 60000 ) {
+		CG_DrawAlignedText( rect, "OVERTIME", scale, color, align, textStyle );
 	}
 }
 
-static void CG_Draw2ndPlace(rectDef_t *rect, float scale, vec4_t color, qhandle_t shader, int textStyle) {
-	if (cgs.scores2 != SCORE_NOT_PRESENT) {
-		CG_Text_Paint(rect->x, rect->y, scale, color, va("%2i", cgs.scores2),0, 0, textStyle); 
+// the client in first (place 0) or second place, or -1
+static int CG_ClientInPlace( int place ) {
+	int		self, rank, i;
+
+	self = cg.snap->ps.clientNum;
+	rank = cg.snap->ps.persistant[PERS_RANK] & ~RANK_TIED_FLAG;
+	if ( cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR && rank == place ) {
+		return self;
+	}
+	// in a duel, the other player; otherwise the scoreboard's order
+	for ( i = 0 ; i < cg.numScores ; i++ ) {
+		if ( cg.scores[i].client != self && cgs.clientinfo[cg.scores[i].client].team != TEAM_SPECTATOR ) {
+			if ( cgs.gametype == GT_TOURNAMENT || !place-- ) {
+				return cg.scores[i].client;
+			}
+		}
+	}
+	for ( i = 0 ; i < MAX_CLIENTS ; i++ ) {
+		if ( i != self && cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team == TEAM_FREE ) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+static void CG_DrawPlaceScore( rectDef_t *rect, float scale, vec4_t color, int textStyle, int place ) {
+	const char	*name, *score;
+	int			client, value;
+
+	if ( cgs.gametype >= GT_TEAM ) {
+		if ( ( place == 0 ) == ( cgs.scores1 >= cgs.scores2 ) ) {
+			name = "Red";
+			value = cgs.scores1;
+		} else {
+			name = "Blue";
+			value = cgs.scores2;
+		}
+	} else {
+		value = place == 0 ? cgs.scores1 : cgs.scores2;
+		client = CG_ClientInPlace( place );
+		name = client >= 0 ? cgs.clientinfo[client].name : "";
+	}
+	if ( value == SCORE_NOT_PRESENT ) {
+		return;
+	}
+
+	score = va( "%i", value );
+	CG_Text_Paint( rect->x + 12, rect->y, scale, color, name, 0, 20, textStyle );
+	CG_Text_Paint( rect->x + rect->w - 12 - CG_Text_Width( score, scale, 0 ), rect->y, scale, color, score, 0, 0, textStyle );
+}
+
+static void CG_DrawGameTypeIcon( rectDef_t *rect ) {
+	static const char	*icons[GT_MAX_GAME_TYPE] = { "ffa", "duel", "ffa", "tdm", "ctf", "1f", "ffa", "har" };
+	qhandle_t			shader;
+
+	shader = trap_R_RegisterShaderNoMip( va( "ui/assets/hud/%s", icons[cgs.gametype] ) );
+	if ( shader ) {
+		CG_DrawPic( rect->x, rect->y, rect->w, rect->h, shader );
+	}
+}
+
+static int CG_WeaponForMeansOfDeath( int mod ) {
+	switch ( mod ) {
+	case MOD_GAUNTLET:			return WP_GAUNTLET;
+	case MOD_MACHINEGUN:		return WP_MACHINEGUN;
+	case MOD_SHOTGUN:			return WP_SHOTGUN;
+	case MOD_GRENADE:
+	case MOD_GRENADE_SPLASH:	return WP_GRENADE_LAUNCHER;
+	case MOD_ROCKET:
+	case MOD_ROCKET_SPLASH:		return WP_ROCKET_LAUNCHER;
+	case MOD_LIGHTNING:			return WP_LIGHTNING;
+	case MOD_RAILGUN:			return WP_RAILGUN;
+	case MOD_PLASMA:
+	case MOD_PLASMA_SPLASH:		return WP_PLASMAGUN;
+	case MOD_BFG:
+	case MOD_BFG_SPLASH:		return WP_BFG;
+	case MOD_GRAPPLE:			return WP_GRAPPLING_HOOK;
+	case MOD_NAIL:				return WP_NAILGUN;
+	case MOD_CHAINGUN:			return WP_CHAINGUN;
+	case MOD_PROXIMITY_MINE:	return WP_PROX_LAUNCHER;
+	case MOD_HMG:				return WP_HMG;
+	default:					return WP_NONE;
+	}
+}
+
+// recent kills as "attacker [weapon] target", newest at the top
+static void CG_DrawObituaries( rectDef_t *rect, float scale, vec4_t color, int textStyle ) {
+	obituaryLine_t	*line;
+	const char		*attacker;
+	float			x, y, lineHeight;
+	int				i, weapon;
+
+	lineHeight = rect->h;
+	y = rect->y + rect->h;
+	for ( i = obituaryCount - 1 ; i >= 0 && i >= obituaryCount - OBITUARY_LINES ; i-- ) {
+		line = &obituaries[i % OBITUARY_LINES];
+		if ( cg.time - line->time > OBITUARY_TIME ) {
+			break;
+		}
+		x = rect->x;
+		attacker = line->attacker < MAX_CLIENTS ? cgs.clientinfo[line->attacker].name : "";
+		if ( line->attacker != line->target && attacker[0] ) {
+			CG_Text_Paint( x, y, scale, color, attacker, 0, 0, textStyle );
+			x += CG_Text_Width( attacker, scale, 0 ) + 4;
+		}
+		weapon = CG_WeaponForMeansOfDeath( line->mod );
+		if ( weapon != WP_NONE && cg_weapons[weapon].weaponIcon ) {
+			CG_DrawPic( x, y - lineHeight, lineHeight, lineHeight, cg_weapons[weapon].weaponIcon );
+			x += lineHeight + 4;
+		}
+		CG_Text_Paint( x, y, scale, color, cgs.clientinfo[line->target].name, 0, 0, textStyle );
+		y += lineHeight + 2;
+	}
+}
+
+// recent chat, newest at the bottom of the rect
+static void CG_DrawNewChat( rectDef_t *rect, float scale, vec4_t color, int textStyle ) {
+	newChatLine_t	*line;
+	float			y, lineHeight;
+	int				i;
+
+	lineHeight = CG_Text_Height( "Ay", scale, 0 ) + 4;
+	y = rect->y + rect->h;
+	for ( i = newChatCount - 1 ; i >= 0 && i >= newChatCount - NEWCHAT_LINES && y - lineHeight >= rect->y ; i-- ) {
+		line = &newChat[i % NEWCHAT_LINES];
+		if ( cg.time - line->time > NEWCHAT_TIME ) {
+			break;
+		}
+		CG_Text_Paint( rect->x, y, scale, color, line->text, 0, 0, textStyle );
+		y -= lineHeight;
 	}
 }
 
@@ -1517,7 +1871,7 @@ void CG_OwnerDraw(float x, float y, float w, float h, float text_x, float text_y
     CG_DrawPlayerArmorIcon(&rect, qtrue);
     break;
   case CG_PLAYER_ARMOR_VALUE:
-    CG_DrawPlayerArmorValue(&rect, scale, color, shader, textStyle);
+    CG_DrawPlayerArmorValue(&rect, scale, color, shader, textStyle, align);
     break;
   case CG_PLAYER_AMMO_ICON:
     CG_DrawPlayerAmmoIcon(&rect, ownerDrawFlags & CG_SHOW_2DONLY);
@@ -1526,7 +1880,7 @@ void CG_OwnerDraw(float x, float y, float w, float h, float text_x, float text_y
     CG_DrawPlayerAmmoIcon(&rect, qtrue);
     break;
   case CG_PLAYER_AMMO_VALUE:
-    CG_DrawPlayerAmmoValue(&rect, scale, color, shader, textStyle);
+    CG_DrawPlayerAmmoValue(&rect, scale, color, shader, textStyle, align);
     break;
   case CG_SELECTEDPLAYER_HEAD:
     CG_DrawSelectedPlayerHead(&rect, ownerDrawFlags & CG_SHOW_2DONLY, qfalse);
@@ -1565,10 +1919,10 @@ void CG_OwnerDraw(float x, float y, float w, float h, float text_x, float text_y
     CG_DrawPlayerItem(&rect, scale, ownerDrawFlags & CG_SHOW_2DONLY);
     break;
   case CG_PLAYER_SCORE:
-    CG_DrawPlayerScore(&rect, scale, color, shader, textStyle);
+    CG_DrawPlayerScore(&rect, scale, color, shader, textStyle, align);
     break;
   case CG_PLAYER_HEALTH:
-    CG_DrawPlayerHealth(&rect, scale, color, shader, textStyle);
+    CG_DrawPlayerHealth(&rect, scale, color, shader, textStyle, align);
     break;
   case CG_RED_SCORE:
     CG_DrawRedScore(&rect, scale, color, shader, textStyle);
@@ -1670,10 +2024,50 @@ void CG_OwnerDraw(float x, float y, float w, float h, float text_x, float text_y
     CG_DrawCapFragLimit(&rect, scale, color, shader, textStyle);
 		break;
   case CG_1STPLACE:
-    CG_Draw1stPlace(&rect, scale, color, shader, textStyle);
+    CG_Draw1stPlace(&rect, scale, color, shader, textStyle, align);
 		break;
   case CG_2NDPLACE:
-    CG_Draw2ndPlace(&rect, scale, color, shader, textStyle);
+    CG_Draw2ndPlace(&rect, scale, color, shader, textStyle, align);
+		break;
+	// baseql: Quake Live's HUDs
+	case CG_PLAYER_HEALTH_BAR_100:
+		CG_DrawStatBar(&rect, cg.snap->ps.stats[STAT_HEALTH], 0, qtrue, color, shader);
+		break;
+	case CG_PLAYER_HEALTH_BAR_200:
+		CG_DrawStatBar(&rect, cg.snap->ps.stats[STAT_HEALTH], 100, qtrue, color, shader);
+		break;
+	case CG_PLAYER_ARMOR_BAR_100:
+		CG_DrawStatBar(&rect, cg.snap->ps.stats[STAT_ARMOR], 0, qfalse, color, shader);
+		break;
+	case CG_PLAYER_ARMOR_BAR_200:
+		CG_DrawStatBar(&rect, cg.snap->ps.stats[STAT_ARMOR], 100, qfalse, color, shader);
+		break;
+	case CG_TEAM_COLORIZED:
+		CG_DrawTeamColorized(&rect, color, shader);
+		break;
+	case CG_ARMORTIERED_COLORIZED:
+		CG_DrawArmorTieredColorized(&rect, color, shader);
+		break;
+	case CG_LEVELTIMER:
+		CG_DrawLevelTimer(&rect, scale, color, align, textStyle);
+		break;
+	case CG_OVERTIME:
+		CG_DrawOvertime(&rect, scale, color, align, textStyle);
+		break;
+	case CG_1ST_PLACE_SCORE:
+		CG_DrawPlaceScore(&rect, scale, color, textStyle, 0);
+		break;
+	case CG_2ND_PLACE_SCORE:
+		CG_DrawPlaceScore(&rect, scale, color, textStyle, 1);
+		break;
+	case CG_GAME_TYPE_ICON:
+		CG_DrawGameTypeIcon(&rect);
+		break;
+	case CG_PLAYER_OBIT:
+		CG_DrawObituaries(&rect, scale, color, textStyle);
+		break;
+	case CG_AREA_NEW_CHAT:
+		CG_DrawNewChat(&rect, scale, color, textStyle);
 		break;
   default:
     break;

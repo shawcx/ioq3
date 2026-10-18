@@ -46,6 +46,9 @@ Gaps: no round-based modes, no match management, no widescreen-aware HUD.
 - [x] Fixed the QVM interpreter rounding float-to-int casts on non-x86 hosts.
 - [x] `make-ql-pak.py` builds Quake Live's HMG assets and maps into a pk3 from
   the player's own copy (`docs/baseql-ql-pak.md`).
+- [x] Phase 4, first part: Quake Live's own HUD scripts run, from the player's
+  Quake Live: widescreen anchoring, a font keyword, and the ownerdraws and
+  flags its standard, minimal and competitive HUDs use for duels.
 - [ ] Next in phase 1: the rest of movement (PQL air control, step/ramp/chain
   jumps, crouch slide) and armor, once their rules can be checked against a
   source; lag compensation; spawn selection.
@@ -60,6 +63,7 @@ on a private server: no bots and no other gametypes. Done for that:
 - The duel factory with Quake Live's duel values, Quake Live's duel map pool,
   and `duel.cfg` for the server.
 - Duels move on to the next pool map after each match, as in Quake Live.
+- Quake Live's HUDs (standard, minimal, competitive).
 - `baseql.pk3` packaging, and a setup guide (`docs/baseql-duel.md`).
 - Tested end to end: two clients on a pure server, warmup, match, time limit,
   and the next map from the pool.

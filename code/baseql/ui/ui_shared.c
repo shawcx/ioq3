@@ -609,6 +609,28 @@ void Fade(int *flags, float *f, float clamp, int *nextTime, int offsetTime, qboo
 
 
 
+/*
+==================
+OwnerDraw_PaintsBackground
+
+baseql: Quake Live's HUDs have ownerdraws that paint the item's background
+image themselves, cut to a value or in a team color, instead of the window.
+==================
+*/
+static qboolean OwnerDraw_PaintsBackground( int ownerDraw ) {
+	switch ( ownerDraw ) {
+	case CG_PLAYER_HEALTH_BAR_100:
+	case CG_PLAYER_HEALTH_BAR_200:
+	case CG_PLAYER_ARMOR_BAR_100:
+	case CG_PLAYER_ARMOR_BAR_200:
+	case CG_TEAM_COLORIZED:
+	case CG_ARMORTIERED_COLORIZED:
+		return qtrue;
+	default:
+		return qfalse;
+	}
+}
+
 void Window_Paint(Window *w, float fadeAmount, float fadeClamp, float fadeCycle) {
   //float bordersize = 0;
   vec4_t color = {0};
@@ -638,7 +660,9 @@ void Window_Paint(Window *w, float fadeAmount, float fadeClamp, float fadeCycle)
 
   if (w->style == WINDOW_STYLE_FILLED) {
     // box, but possible a shader that needs filled
-		if (w->background) {
+		if (w->background && OwnerDraw_PaintsBackground(w->ownerDraw)) {
+			// the ownerdraw paints it
+		} else if (w->background) {
 		  Fade(&w->flags, &w->backColor[3], fadeClamp, &w->nextTime, fadeCycle, qtrue, fadeAmount);
       DC->setColor(w->backColor);
 	    DC->drawHandlePic(fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->background);
@@ -4351,6 +4375,9 @@ void Menu_Paint(menuDef_t *menu, qboolean forcePaint) {
 		menu->window.flags |= WINDOW_FORCED;
 	}
 
+	// baseql: tell the drawing functions where this menu sits on wide screens
+	DC->widescreen = menu->widescreen;
+
 	// draw the background if necessary
 	if (menu->fullScreen) {
 		// implies a background shader
@@ -4374,6 +4401,8 @@ void Menu_Paint(menuDef_t *menu, qboolean forcePaint) {
 		color[1] = 0;
 		DC->drawRect(menu->window.rect.x, menu->window.rect.y, menu->window.rect.w, menu->window.rect.h, 1, color);
 	}
+
+	DC->widescreen = WIDESCREEN_STRETCH;
 }
 
 /*
@@ -4755,6 +4784,11 @@ qboolean ItemParse_visible( itemDef_t *item, int handle ) {
 		item->window.flags |= WINDOW_VISIBLE;
 	}
 	return qtrue;
+}
+
+// baseql: Quake Live's "font FONT_*"
+qboolean ItemParse_font( itemDef_t *item, int handle ) {
+	return PC_Int_Parse(handle, &item->font);
 }
 
 qboolean ItemParse_ownerdraw( itemDef_t *item, int handle ) {
@@ -5199,6 +5233,7 @@ keywordHash_t itemParseKeywords[] = {
 	{"bordersize", ItemParse_bordersize, NULL},
 	{"visible", ItemParse_visible, NULL},
 	{"ownerdraw", ItemParse_ownerdraw, NULL},
+	{"font", ItemParse_font, NULL},
 	{"align", ItemParse_align, NULL},
 	{"textalign", ItemParse_textalign, NULL},
 	{"textalignx", ItemParse_textalignx, NULL},
@@ -5515,6 +5550,13 @@ qboolean MenuParse_name( itemDef_t *item, int handle ) {
 	return qtrue;
 }
 
+// baseql: Quake Live's "widescreen WIDESCREEN_*"
+qboolean MenuParse_widescreen( itemDef_t *item, int handle ) {
+	menuDef_t *menu = (menuDef_t*)item;
+
+	return PC_Int_Parse(handle, &menu->widescreen);
+}
+
 qboolean MenuParse_fullscreen( itemDef_t *item, int handle ) {
 	menuDef_t *menu = (menuDef_t*)item;
 	union
@@ -5812,6 +5854,7 @@ keywordHash_t menuParseKeywords[] = {
 	{"background", MenuParse_background, NULL},
 	{"ownerdraw", MenuParse_ownerdraw, NULL},
 	{"ownerdrawFlag", MenuParse_ownerdrawFlag, NULL},
+	{"widescreen", MenuParse_widescreen, NULL},
 	{"outOfBoundsClick", MenuParse_outOfBounds, NULL},
 	{"soundLoop", MenuParse_soundLoop, NULL},
 	{"itemDef", MenuParse_itemDef, NULL},

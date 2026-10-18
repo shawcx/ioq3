@@ -1739,6 +1739,45 @@ static void CG_RunCinematicFrame(int handle) {
 
 /*
 =================
+CG_RegisterFont
+
+baseql: the engine only has fonts pre-rendered at certain sizes
+(fonts/fontImage_<size>.dat). Quake Live's HUDs ask for sizes Team Arena
+doesn't have, so use the nearest size there is; the engine scales its glyphs
+to match.
+=================
+*/
+static void CG_RegisterFont( const char *fontName, int pointSize, fontInfo_t *font ) {
+	static const int	sizes[] = { 12, 16, 20, 24, 32, 48 };
+	fileHandle_t		f;
+	int					i, best, size;
+
+	best = pointSize;
+	trap_FS_FOpenFile( va( "fonts/fontImage_%i.dat", pointSize ), &f, FS_READ );
+	if ( f ) {
+		trap_FS_FCloseFile( f );
+	} else {
+		best = 0;
+		for ( i = 0 ; i < ARRAY_LEN( sizes ) ; i++ ) {
+			size = sizes[i];
+			trap_FS_FOpenFile( va( "fonts/fontImage_%i.dat", size ), &f, FS_READ );
+			if ( !f ) {
+				continue;
+			}
+			trap_FS_FCloseFile( f );
+			if ( !best || abs( size - pointSize ) < abs( best - pointSize ) ) {
+				best = size;
+			}
+		}
+		if ( !best ) {
+			best = pointSize;
+		}
+	}
+	trap_R_RegisterFont( fontName, best, font );
+}
+
+/*
+=================
 CG_LoadHudMenu();
 
 =================
@@ -1763,7 +1802,7 @@ void CG_LoadHudMenu( void ) {
 	cgDC.clearScene = &trap_R_ClearScene;
 	cgDC.addRefEntityToScene = &trap_R_AddRefEntityToScene;
 	cgDC.renderScene = &trap_R_RenderScene;
-	cgDC.registerFont = &trap_R_RegisterFont;
+	cgDC.registerFont = &CG_RegisterFont;
 	cgDC.ownerDrawItem = &CG_OwnerDraw;
 	cgDC.getValue = &CG_GetValue;
 	cgDC.ownerDrawVisible = &CG_OwnerDrawVisible;

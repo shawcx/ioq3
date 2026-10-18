@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 // for the voice chats
 #ifdef MISSIONPACK
-#include "../../../ui/menudef.h"
+#include "../data/ui/menudef.h"
 #endif
 //==========================================================================
 
@@ -111,6 +111,7 @@ static void CG_Obituary( entityState_t *ent ) {
 	if ( !targetInfo ) {
 		return;
 	}
+	CG_AddObituary( attacker, target, mod );
 	Q_strncpyz( targetName, Info_ValueForKey( targetInfo, "n" ), sizeof(targetName) - 2);
 	strcat( targetName, S_COLOR_WHITE );
 

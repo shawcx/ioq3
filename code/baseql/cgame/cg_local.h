@@ -1293,6 +1293,8 @@ void CG_RunMenuScript(char **args);
 void CG_ShowResponseHead( void );
 void CG_SetPrintString(int type, const char *p);
 void CG_InitTeamChat( void );
+void CG_AddToNewChat( const char *text );
+void CG_AddObituary( int attacker, int target, int mod );
 void CG_GetTeamColor(vec4_t *color);
 const char *CG_GetGameStatusText( void );
 const char *CG_GetKillerText( void );
